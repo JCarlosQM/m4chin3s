@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+	<head>
+		<meta charset="UTF-8">
+		<link rel="stylesheet" href=../css/general.css>
+	</head>
+
+	<body>
+		<h2> VulnUniversity </h2> <hr>
+		<div>
+			<div>
+				<img src="../imagenes/VulnUniversity/vulnversity.png" alt="Machine">
+			</div>
+			<section>
+				<nav>
+					<p>
+						La maquina Vulnhub se ubica en TryHackme, y es de nivel fàcil, sin embargo lo importante de esta es la manera como se descubren algunas vulnearbilidades en cuanto a contenido expuesto que es utilizado para cargar archivos y posterior a ello la utilizaciòn de contenido con permisos SUID (Set User ID)
+					</p>
+				</nav>
+				<div>
+					<nav>				
+						<p>Para comenzar, es necesario encender la maquina en la plataforma TryHakme y tener el archivo *.openvpn en nuestro dispositivo</p>
+						<p>Por consiguiente se procede a realizr el escaneo de la direcciòn IP proporcionada al encender la maquina en la plataforma virtual antes mencionada, teniendose como resultado en el la siguiente captura</p>
+					</nav>
+					<img src="../imagenes/VulnUniversity/escaneoG.png" alt="Salida nmap Grepeada"></img>
+					<nav>
+						<p>Posterior a la revision del escaneo podemos apreciar multiples puertos abiertos, pero en uno de estos corre el servicio <b>http</b> el cual hace referencia a que se encuentra una web</p>
+					</nav>
+					<img src="../imagenes/VulnUniversity/webServer.png" alt="Web"></img>
+					<nav>
+						<p>Al aplicar Fuzzin a esta web, con la herramienta <b>ffuf</b> se ha logrado encontrar la direcciòn <b>internal</b></p>
+					</nav>
+					<img src="../imagenes/VulnUniversity/Fuzzeo.png" alt="FFUF"></img>
+					<img src="../imagenes/VulnUniversity/internal.png" alt="Hallazgo FFUF"></img>
+					<nav>
+						<p>En la web llamada internal se tien</p>
+					</nav>
+					<img src="../imagenes/VulnUniversity/webInterna.png" alt="Hallazgo FFUF"></img>
+					<nav>
+						<p>Despues de verificar que se puede hacer la subida de ciertos archivos y conocer que se esta corriendo un servicio en base a <b>PHP</b> se ha logrado bùscar un script que nos genere una reverseshell de manera automatica, por lo que se ha puesto la direcciòn IP propia de usuario de Tryhackme en esta y la el puerto en el que se pretende estar en escucha para una conexiòn, el script usado es de <b>Pentestmonkey's reverse shell</b>, el cual puede ser encontrado en su cuenta de Github</p>
+						<p>Luego de subir el script ya con la reverseShell para PHP al servidor se pone en escucha con <b>nc</b> en nuestra màquina local y en la web se dirige a la URL http://10.10.151.174:3333/internal/name.phtml, donde name.phtml es el archivo que se ha subido. "El nombre puede ser cualquiera"  </p>
+					</nav>
+					<code>nc -nlvp 7777</code>
+					<nav>
+						<p>Al obtener la conexion en nuestro equipo local se tiene la primera bandera que solicita tryhackme, ademàs se puede listar el contenido, ver el usuario actual y ver que haye archivos que aùn no pueden ser utilizados o directorios a los que no se tiene acceso, porque falta el permiso root, en primera instancia se tiene: </p>
+					</nav>
+					<img src="../imagenes/VulnUniversity/conection1.png" alt="Conexion user"></img>
+					<nav>
+						<p>Al ganar acceso a la maquina necesito bùscar los archivos que tienen permisos elevados, listandose estos llegando asi a encontrar en esta lista a   <b>/bin/systemctl</b></p>
+					</nav>
+					<img src="../imagenes/VulnUniversity/buscaPriv.png" alt="Bùsqueda SUID"></img>
+					<nav>
+						<p>Al encontrar que se puede ejecutar un servicio con pocos privilegios como usuario <b>root</b> se puede ganar acceso de esta manera. Por lo cual primeramente nos dirigimos a la carpeta <b>/temp</b> y ya sea emulando un servidor con python en nuestro equipo local o subiendo a la web pero con extension <b>.phmtl</b> se puede generar un servicio el cual se ejecute con <b>systemctl</b> en caso se pase con un servidor de python el archivo puede tener la extensiòn propia que se desea, la cual es <b>.service</b> pero no habria problema si se hace desde la web ya que solo bastaria con mover de ubicaciòn y cambiar el nombre del archivo, el contenido que debe contener debe ser como el siguiente </p>
+					</nav>
+					<img src="../imagenes/VulnUniversity/service.png" alt="Archivo Service"></img>
+					<nav>
+						<p>El servicio tiene una reverse shell que se va a ejecutar al activarse con el servicio de "systemctl", por lo cual es necesario igualmente ponerse en escucha por un puerto especifico y con nuestra IP de TryHackme</p>
+						<p>Para activar el service se hace lo siguiente</p>
+					</nav>
+					<img src="../imagenes/VulnUniversity/activate.png" alt="Archivo Service"></img>
+					<nav>
+						<p>Al inicar el servicio con <b>start</b> y tener activada la escucha en otra terminal aqui se llegarà la conecciòn como root</p>
+					</nav>
+					<code>nc -nlvp 7777</code>
+					<img src="../imagenes/VulnUniversity/root.png" alt="Escalamiento"></img>
+					<nav>
+						<p>Este es el final de la màquina obteniendo asi el archivo <b>root.txt</b> el cual contiene la credencial que se debe ingresar en Tryhackme</p>
+					</nav>
+				</div>
+			</section>
+		</div>
+	</body>
+	
+	<hr>
+	<footer>
+		<div>
+			Jcarlos
+		</div>
+		<div>
+			<a href="https://rb.gy/d2u7jy" target="_blank" > Linkeding </a>
+		</div>
+	</footer>
+</html>

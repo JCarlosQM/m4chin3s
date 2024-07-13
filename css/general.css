@@ -1,0 +1,50 @@
+*{
+	font-family: "Calibri", "Helvetica", sans-serif;
+}
+
+body{
+	margin: 10px;
+	padding: 10px;
+	background-color: black;
+	color: green;
+	text-align: center;
+}
+
+img{
+	paddng: 5px;
+	margin: 10px;
+	max-width: 70%;
+   height: auto;
+   border-radius: 4px;
+   overflow: hidden;
+}
+
+code {
+  border-radius: 10px;
+  display: block;
+  padding: 10px;
+  color: black;
+  background-color: gray;
+  font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+  white-space: pre-wrap;
+}
+
+nav {
+	text-align: justify;
+}
+
+footer {
+	padding-top: 10px;
+	display: flex;
+	justify-content: space-around;
+}
+
+footer div {
+	flex: 1;
+	margin: 0 4px;
+}
+
+a {
+	text-decoration: none;
+	color: inherit;
+}
