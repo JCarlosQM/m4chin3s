@@ -31,6 +31,7 @@ code {
 
 nav {
 	text-align: justify;
+	margin: 40px;
 }
 
 footer {
@@ -48,3 +49,4 @@ a {
 	text-decoration: none;
 	color: inherit;
 }
+
