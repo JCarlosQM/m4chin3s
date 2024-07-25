@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es">
+   <head>
+      <meta charset="UTF-8">
+      <link rel="stylesheet" href=../css/general.css>
+   </head>
+   <body>
+   	<h2> Publisher </h2>
+		<div>
+			<div>
+				<img src="../imagenes/Publisher/Publisher.png" alt="Machine">
+			</div>
+			<section>
+            <nav>
+               <p>
+                  La maquina Publisher se ubica en TryHackme, y es de dificultad fàcil, pero esta destaca en el uso de <b>armor</b> y la forma en que se comparte ciertos scripts con permisos SUID, como tambièn cabe destacar que esta tiene una versiòn vulnerable de spip, lo cual permite ejecuciòn remota de comandos
+               </p>
+            </nav>
+            <div>
+            	<nav>
+						<p>Para comenzar, es necesario encender la maquina en la plataforma TryHakme y tener el archivo *.openvpn en nuestro dispositivo</p>
+						<p>Reconocimiento de maquina mediante ping, teniendose un ttl de 63, estando cerca de 64 lo cual en TryHackme es Linux </p>
+            	</nav>
+            	<img src="../imagenes/Publisher/scan1.png" alt="Pineo a la màquina remota">
+					<nav>
+						<p>
+							Haciendo escaneo de los 65535 puertos de la maquina con nmap
+						</p>
+					</nav>
+					<img src="../imagenes/Publisher/nmapscan.png" alt="Escaneo nmap">
+					<nav>
+						<p>
+							Se han detectado solo 2 puertos abiertos, en los cuales se tiene
+						</p>
+					</nav>
+					<img src="../imagenes/Publisher/openPorts.png" alt="Puertos abiertos">
+					<nav>
+						<p>
+							Se tiene en la web
+						</p>
+					</nav>
+					<img src="../imagenes/Publisher/webContent.png" alt="Contenido web">
+					<nav>
+						<p>
+							Con <b>ffuf</b> se ha realizado fuzzeo a la web encontrándose lo sigueinte 
+						</p>
+					</nav>
+					<img src="../imagenes/Publisher/fuzz.png" alt="Fuzzeo">
+					<nav>
+						<p>
+							Por consiguiente en esa web se tiene una versión vulnerable de ella 
+						</p>
+					</nav>
+					<img src="../imagenes/Publisher/spip.png" alt="spip vulnerable">
+					<nav>
+						<p>
+							Clonándose el repositorio de github con el <b>CVE-2023-27372</b> se procede a tratar de cargar de manera forzada contenido, poniendo el siguiente comando en nuestro repositorio clonado
+						</p>
+					</nav>
+					<code>  python CVE-2023-27372.py -u http://10.10.99.151/spip -c 'echo "&lt;?php system(\$_GET[\"cmd\"]); ?>" &gt; webshell.php'  -v </code>
+					<img src="../imagenes/Publisher/scriptpy.png" alt="Ejecuciòn de script">
+					<nav>
+						<p>
+							Con lo cual en la web se ha realizado la subida de un archivo llamado <b>webshell.php</b> la cual tiene un script que puede lograr la ejecuciòn remota de comandos al acceder a esta, logrando asì acceder en primera instancia al contenido de esta màquina
+						</p>
+					</nav>
+					<img src="../imagenes/Publisher/controlRemote.png" alt="Ejecuciòn de comandos">
+					<nav>
+						<P>
+							Bùscando en el contenido de este bloque, mediante la web  se puede encontrar la primera flag, el nombre de un usuario ademàs de contenido sensible como el directorio donde se ubican las llaves <b>ssh</b> lo cual en el escaneo inicial se verifico que el puerto de esta maquina acepta conecciones remotas mediante ese protocolo
+						</P>
+					</nav>
+					<img src="../imagenes/Publisher/flag1.png" alt="Flag 1"> <br>
+					<img src="../imagenes/Publisher/sshKey.png" alt="ssh key">
+					<nav>
+						<p>
+							Lo que posteriormente guardo en mi maquina local y le doy permiso 600
+						</p>
+					</nav>
+					<img src="../imagenes/Publisher/permisesKey.png" alt="Permisos ssh">
+					<nav>
+						<p>
+							Por cponsiguiente tenendo como usuaerio a <b>think</b>, procedo a intentar realizar la conecciòn por <b>ssh</b> con la llave que tengo para acceder sin contraseña
+						</p>
+					</nav>
+					<img src="../imagenes/Publisher/coneccionssh.png" alt="Conecciòn ssh">
+                  <p>
+							En este apartado se puede ver que nos encontramos en una <b>ash</b> como usuario <b>think</b>
+                  </p>
+               </nav>
+               <img src="../imagenes/Publisher/terminalUsa.png" alt="Verificacion de consola usada">
+               <nav>
+                  <p>
+							Al listar archivos con permisos SUID se tiene la siguiente lista
+                  </p>
+               </nav>
+               <img src="../imagenes/Publisher/suid.png" alt="SUID">
+               <nav>
+						<p>
+							Al evaluar con <b>strings</b> el contenido de <b>run_container</b> se logra verificar que invoca a ciertos archivos, ademàs cabe recalcar que al ejecutarse este script sale como <b>not found</b> 
+						</p>
+               </nav>
+               <img src="../imagenes/Publisher/strings.png" alt="Strings"><br>
+               <img src="../imagenes/Publisher/ejecucion.png" alt="run_container">
+					<nav>
+						<p>En este punto nos damos cuenta que se estan ejecutando contenedores de <b>docker</b> en esta màquina y en primera instancia se tenia acceso posiblemente a uno de ellos</p>
+						<p>Verificamos que podemos ver el contenido de el archivo situado en /opt/ pero no editarlo a pesar que nos aparece que tenemos todos los permisos</p>
+					</nav>
+					<img src="../imagenes/Publisher/permisos.png" alt="Permisos"><br>
+               <img src="../imagenes/Publisher/content.png" alt="run_container.sh">
+               <nav>
+						<P>
+							Aqui se aplica un concepto de <b>AppArmor</b> "AppArmor es un sistema de control de acceso obligatorio (MAC, por sus siglas en inglés Mandatory Access Control) para sistemas operativos Linux. Su objetivo principal es proporcionar una capa adicional de seguridad al restringir los recursos a los que pueden acceder los programas en función de perfiles de seguridad predefinidos"
+						</P>
+               </nav>
+               <img src="../imagenes/Publisher/apparmor.png" alt="apparmor">
+               <nav>
+						<p>
+							Al verificar que se tiene casi bloqueo completo por las reglas aplicadas en <b>ash</b> hacemos uso de un cargador dinamico <i>ld-linux-x86-64.so.2</i> con el que se pretende cargar y ejecutar el interprete de comandos <b>BASH</b>
+						</p>
+						<p>
+							Despues de usar el cargador dinamico se verifica que el intereprete con
+						</p>
+               </nav>
+               <code>echo $0</code>
+					<nav>
+						<p>
+							Ahora que ya se tiene el interprete que necesitamos, para escapar de <b>ash</b> podemos volver a verificar el contenido de <b>run_container.sh</b> para modificar este, ya que es invocado por el binario <b>/usr/sbin/run_container</b> y este realizarà la opcion que nosotros deseemos, llegando asì a hacer un secuestro de terminal ya que el binario tiene permisos SUID
+						</p>
+						<p>
+							Entramos al archivo de /opt/ y borramos todo y simplemente damos permisos SUID a /bin/bash para que al ejecutarse esta sea root
+						</p>
+					</nav>
+					<img src="../imagenes/Publisher/reemplaze.png" alt="remplazando contenido">
+					<nav>
+						<p>
+							Despues de modificar el contenido es necesario volver a ejcutar <i>`/usr/sbin/run_container</i> hora ya tengo la bin bash con permisos SUID 
+						</p>
+					</nav>
+					<img src="../imagenes/Publisher/accesoroot.png" alt="escalamiento">
+					<nav>
+						<p>
+							Con lo cual se logra acceso con los maximos privilegios al sistema, ademàs que aqui se encuentra la ultima flag
+						</p>
+					</nav>
+					<img src="../imagenes/Publisher/flag2.png" alt="flag2">
+            </div>
+         </section>
+      </div>
+   </body>
+
+   <hr>
+   <footer>
+      <div>
+         Jcarlos
+      </div>
+      <div>
+         <a href="https://rb.gy/d2u7jy" target="_blank" > Linkeding
+      </div>
+   </footer>
+</html>
