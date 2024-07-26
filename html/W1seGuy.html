@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="es">
+   <head>
+      <meta charset="UTF-8">
+      <link rel="stylesheet" href=../css/general.css>
+		<title>W1seGuy</title>
+		<style>
+			.obviarContent{
+				display: inline-block;
+				text-align: left;
+				white-space: pre;
+			}
+		</style>
+   </head>
+   <body>
+   	<h2>W1seGuy</h2>
+   	<div>
+			<div>
+				<img src="../imagenes/W1seGuy/W1seGuy.png" alt="Machine">
+			</div>
+			<section>
+				<nav>
+					<p>
+						Tryhackme nos presenta un caso de donde se necesita descubrir las credenciales correctas, con el fin de probar la capacidad del usuario, tal cual menciona el apartado donde esta el caso de la màquina W1seGuy
+					</p>
+				
+				</nav>
+				<div>
+					<nav>
+						<p>
+							Para comenzar, es necesario encender la maquina en la plataforma TryHakme y tener el archivo *.openvpn en nuestro dispositivo
+						</p>
+						<p>
+							 Primeramente, en el contenido nos indica que tenemos un archivo que podemos descargar a nuestro equipo y hacer revisiòn del codigo del mismo, como tambièn nos indica que se tiene escucha por parte del servidor en el puerto 1337 
+						</p>
+						<p>
+							Al analizar el código fuente, podemos entender que este código configura un servidor que desafía a los usuarios a descifrar un mensaje cifrado con XOR. Puesto que este actua cuando un cliente se conecta, el servidor generandose asi una clave aleatoria de 5 caracteres y la utiliza para aplicar la operación XOR a cada carácter de una bandera codificada (THM{thisisafakeflag}), todo este proceso se realiza utilizando XOR a nivel de bits; el mensaje cifrado resultante se convierte entonces a formato hexadecimal y se envía al cliente. El cliente debe adivinar la clave aleatoria utilizada para el cifrado; si lo logra, recibe la bandera original almacenada en un archivo.
+						</p>
+					</nav>
+					<img src="../imagenes/W1seGuy/revision1.png" alt="Aletaroiedad">
+					<nav>
+						<p>
+							En este bloque se aprecia que se genera de manera aleatoria 5 caracteres incluyendo letras del alfabeto (mayúsculas y minúsculas) y todos los dígitos del 0 al 9, los caules posteriormente son asignados a la variable <b>key</b>
+						</p>
+						<p>
+							Por lo cual para hacer la prueba, lo he realizado en mi màquina local, en primera instancia, comenzando con la creaciòn de un archivo <i>flag.txt</i> para poder ejecutar el codigo en <b>python</b> que se ha descargado, con lo cual posteriormente se pretende hacer la impresiòn de la KEY y revisar si esta tiene algo que ayude a procesar la informaciòn
+						</p>
+						<p><i>El contenido de flag.txt puede ser cualquiera, en este caso he utilizado <b>THM{carlos}</b> y he agregado una sentencia que imprima el contenido de la <b>key</b></i></p>
+					</nav>
+					<img src="../imagenes/W1seGuy/revision2.png" alt="Impresiòn de KEY">
+					<nav>
+						<p>
+							Procediendo a tratar de hacer la conecciòn remota desde mi propia màquina local, al puerto <b>1337</b> tengo la llave de 5 digitos, que se me muestra con la impresiòn de la key que se hizo anteriormente, cabe recalcar que para esto es necesario ejecutar el script descargado de TryHackme
+						</p>
+					</nav>
+					<img src="../imagenes/W1seGuy/revision3.png" alt="Primera conecciòn">
+					<nav>
+						<p>
+							En este punto se puede apreciar que al poner la clave correcta al final nos brinda la contraseña que tiene el txt al que este invoca, teniendo al final del proceso <b>THM{carlos}</b>
+						</p>
+						<p>
+							Al comprender el funcionamiento del script, empecé a desarrollar uno para encontrar la clave de cifrado. Para ello, consulté a ChatGPT con el script de cifrado y pedí ayuda para crear un script de descifrado. Sabía que los primeros cuatro caracteres son siempre “THM{” y el último es “}”. Así, el nuevo script solo necesita hallar la clave que convierte “THM{” en la primera parte del hash y “}” en la parte final, sin necesidad de descifrar el resto de la bandera, teniendo este codigo como resultado
+						</p>
+					</nav>
+					<div class="obviarContent" >
+						<pre style="font-family: monospace; white-space: pre; background-color: #f5f5f5; border: 1px solid #ccc; padding: 10px; overflow-x: auto;">
+import string
+
+def decrypt_key(prefix_encrypted_hex, suffix_encrypted_hex):
+    """
+    Desencripta la clave de cifrado basada en el prefijo y sufijo encriptados.
+
+    Args:
+        prefix_encrypted_hex (str): Representación hexadecimal del prefijo encriptado.
+        suffix_encrypted_hex (str): Representación hexadecimal del sufijo encriptado.
+
+    Returns:
+        str: La clave de cifrado desencriptada.
+    """
+    # Convertir de hexadecimal a bytes
+    prefix_encrypted = bytes.fromhex(prefix_encrypted_hex)
+    suffix_encrypted = bytes.fromhex(suffix_encrypted_hex)
+    
+    # Constantes conocidas
+    prefix = "THM{"
+    suffix = "}"
+    
+    # Desencriptar el prefijo y sufijo de la clave
+    key_prefix = ''.join(chr(b ^ ord(c)) for b, c in zip(prefix_encrypted, prefix))
+    key_suffix = chr(suffix_encrypted[0] ^ ord(suffix))
+    
+    # Combinar el prefijo y sufijo para formar la clave
+    key = key_prefix + key_suffix
+    
+    return key
+
+if __name__ == "__main__":
+    # Solicitar la entrada del hash encriptado
+    encrypted_hash = input("Introduce el hash encriptado en hexadecimal: ").strip()
+    
+    # Extraer el prefijo y sufijo encriptados
+    prefix_length = len("THM{") * 2  # Convertir a bytes
+    prefix_encrypted_hex = encrypted_hash[:prefix_length]
+    suffix_encrypted_hex = encrypted_hash[-2:]  # Último byte para el sufijo
+    
+    # Desencriptar la clave
+    decrypted_key = decrypt_key(prefix_encrypted_hex, suffix_encrypted_hex)
+    
+    print(f"La clave de cifrado es: {decrypted_key}")
+	</pre>
+</div>		
+
+					<img src="../imagenes/W1seGuy/revision4.png" alt="Verificacion de script">
+					<nav>
+						<p>
+							Al poner a prueba el script, mediante la habilitaciòn del servidor con el codigo base de tryhackme, y la conecciòn por nc se verifico que logra decodificar la clave, comprobandose esta, al verificar la catura de pantalla yendo de derecha a izquierda, donde se validò exitosamente la clave adquirida en por el el hash en hexadecimal, que se proporciono a la segunda pantalla donde se ejecuto el script de desencryptaciòn y finalmente la impresiòn que se considero desde el codigo fuente, dando credito al funcionamiento del script decodificador 
+						</p>
+					</nav>
+					<nav>
+						<p>
+							En este punto se podria decir que ya tenemos la posibilidad de pasar el hash en hexadecimal a nuestro script y este va a tener la capacidad de desencriptarlo, asimismo es importante saber que tryhackme utiliza la sentencia <b>THM{...}</b> en la cual se mostrarà la flag, por lo que el script ayudado de esto es màs eficinte, por otra parte en cuanto a la conecciòn se tiene que esta clave corresponde a la segunda flag
+						</p>
+					</nav>
+					<img src="../imagenes/W1seGuy/revision5.png" alt="Verificacion de clave">
+					<nav>
+						<p>
+							Al verificar el cdigo descargado de TryHackme se puede apreciar que en este se encuentra la segunda flag tambièn pero esta al igual que la anterior pasa por un proceso de encryptaciòn, en este caso siendo la flag
+						</p>
+					</nav>
+					<img src="../imagenes/W1seGuy/revision6.png" alt="Evidencia base de clave"><br>
+					<img src="../imagenes/W1seGuy/revision7.png" alt="Evidencia base de clave">
+					<nav>
+						<p>
+							Por consiguiente ya que se tiene la clave y el hash hexadecimal codificado, se debe generar otro script, en esta ocaciòn para decifrar el hash y obtener la flag interna, al igual que la anterior con la ayuda de ChatGPT se ha llegado a obtener este script
+						</p>
+					</nav>
+					<div class="obviarContent" >
+                  <pre style="font-family: monospace; white-space: pre; background-color: #f5f5f5; border: 1px solid #ccc; padding: 10px; overflow-x: auto;">
+						
+import string
+
+# Función para simular el envío de un mensaje al servidor
+def enviar_mensaje(mensaje):
+    print(mensaje)
+
+# Función para descifrar el hash codificado con XOR
+def descifrar(hex_codificado, clave):
+    bytes_codificados = bytes.fromhex(hex_codificado)
+    flag_descifrada = ""
+    for i in range(len(bytes_codificados)):
+        flag_descifrada += chr(bytes_codificados[i] ^ ord(clave[i % len(clave)]))
+    return flag_descifrada
+
+# Función principal para iniciar el proceso de descifrado
+def decodificar_hash():
+    # Recibir el hash encriptado del usuario
+    hex_codificado = input("Introduce el hash encriptado (en hexadecimal): ").strip()
+
+    # Recibir la clave de descifrado del usuario
+    clave = input("Introduce la clave de descifrado: ").strip()
+
+    # Intentar descifrar el hash codificado con XOR usando la clave proporcionada
+    try:
+        flag_descifrada = descifrar(hex_codificado, clave)
+        enviar_mensaje("Flag descifrada: " + flag_descifrada)
+    except Exception as e:
+        enviar_mensaje("Error durante el descifrado: " + str(e))
+
+# Ejecutar la función principal para iniciar el proceso de descifrado
+if __name__ == '__main__':
+    decodificar_hash()
+
+						</pre>
+					</div>
+					<nav>
+						<p>
+							Ya teniendo el script anterior donde se decodifica y obtiene la clave de 5 digitos, ahora en este nuevo script, se trabaja con ella y con el valor hexadecimal, mediante el cual se obtenga la primera flag
+						</p>
+					</nav>
+					<img src="../imagenes/W1seGuy/revision8.png" alt="Clave interna"><br>
+					<nav>
+						<p>
+							Revisando la captura de derecha a izquierda primeramente se tiene la ejecuciòn del nuevo script, despues se ha imprimido los valores del script original y esto se logra mediante la conecciòn como la anterior con <b>nc</b>,finalmente se tiene la bandera interna, la cual se ha logrado recopilar en la el script nuevo, indicando en la parte final <b>flag decifrada</b>
+						</p>
+						<p>
+							Si bien es cierto, todas las pruebas se han realizado en el entorno local, y esto ha funcionado de manera correcta, ahora queda hacer la prueba a la màquina ya habilitada en TryHackme
+						</p>
+					</nav>
+					<img src="../imagenes/W1seGuy/flags.png" alt="Clave interna">
+					<nav>
+						<p>
+							Al realizar la prueba remota, vemos que los scripts han funcionado de manera adecuada, el primero devolviendo la clave de 5 digitos  el segundo obteniendo la bandera interna, gracias al hash hexadecimal y la clave descubierta en el primer scrip, dando asì fin a esta màquina de TryHackme
+						</p>
+					</nav>
+				</div>
+			</section>		
+   	</div>
+   </body>
+   <hr>
+   <footer>
+      <div>
+         Jcarlos
+      </div>
+      <div>
+         <a href="https://rb.gy/d2u7jy" target="_blank" > Linkeding </a>
+      </div>
+   </footer>
+</html>
+
