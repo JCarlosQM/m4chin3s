@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+   <head>
+      <meta charset="UTF-8">
+      <link rel="stylesheet" href=../css/general.css>
+      <title>Blue vs Red</title>
+      <style>
+			.obviarContent{
+				display: inline-block;
+				text-align: left;
+				white-space: pre;
+			}
+      </style>
+   </head>
+   <body>
+   	<h2>Blue vs Red</h2>
+   	<div>
+			<div>
+				<img src="../imagenes/RedandBlue/red_blue.png" alt="Red and blue">
+			</div>
+			<section>
+				<nav>
+					<p>
+						Esta màquina es de dificultad fàcil, esta en TryHackme y tiene tres flags, consta de LFI (Local File Inclusion), asimismo representa un reto el obtener las credenciales del primer acceso ya que red ademàs que interactua con la consola, te cierra la conecciòn y hace que sea necesario volver a obtener las credenciales, por consiguiente esta màquina tiene procesos que corren, con el fin de apuntar a una IP especìfia, con lo que se logra el escalamiento a otro usuario, posterior a ello se tiene una vulnerabilidad a <b>pkexec</b>
+					</p>
+					<p>
+						 Para comenzar, es necesario encender la maquina en la plataforma TryHakme y tener el archivo *.openvpn en nuestro dispositivo 
+					</p>
+				</nav>
+				<div>
+					<nav>
+						<p>
+							Primeramente empezamos, verificando el <b>ttl</b> de la màquina remota y la conecciòn a la misma , haciendo un pineo
+						</p>
+					</nav>
+					<img src="../imagenes/RedandBlue/pineo.png" alt="Pineo base">
+					 <nav>
+                  <p>
+                  	Comenzamos haciendo el primer escaneo general con nmap, donde se procesan los 65535 puertos 
+                  </p>
+               </nav>
+               <img src="../imagenes/RedandBlue/scan1.png" alt="Primer escaneo">
+               <nav>
+						<p>
+							Posterior a este escaneo se verifica que haye 2 puertos abiertos, por lo cual se realizarà nuevo escaneo pero directamente a estos
+						</p>
+               </nav>
+               <img src="../imagenes/RedandBlue/scan2.png" alt="Segundo escaneo escaneo">
+					<nav>
+						<p>
+							En este punto podemos conocer que se trata de una màquina Linux (Ubuntu) y nos reporta una direcciòn dinàmica a la que apunta la web base, por lo que en la web base directamente tenemos 
+						</p>
+					</nav>
+					<img src="../imagenes/RedandBlue/scanweb.png" alt="Reconocimiento web">
+					<img src="../imagenes/RedandBlue/web.png" alt="Web encontrada">
+					<nav>
+						<p>
+							En este puto podemos deducir que se trata de un LFI (Local File Inclusion), por la direcciòn a la que apunta la web, sin embargo al tratar de pasar datos directos clasicos de un LFI este no corresponde, pero cuando se trata de ir a <b>index.php</b>, he logrado obtener lo que parecen ser unas reglas del propio PHP
+						</p>
+					</nav>
+					<div class="obviarContent">
+						<pre style="font-family: monospace; white-space: pre; background-color: #f5f5f5; border: 1px solid #ccc; padding: 10px; overflow-x: auto;"> 
+        &lt;?php
+        function sanitize_input($param) {
+            $param1 = str_replace("../","",$param);
+            $param2 = str_replace("./","",$param1);
+            return $param2;
+        }
+        $page = $_GET['page'];
+        if (isset($page) &amp;&amp; preg_match("/^[a-z]/", $page)) {
+            $page = sanitize_input($page);
+            readfile($page);
+        } else {
+            header('Location: /index.php?page=home.html');
+        }
+        ?&gt;
+						</pre>
+					</div>
+					<nav>
+						<p>
+							Al revisar como se puede vulnerar o pasar por alto estas validaciones he encontrado que poniendo <i>about/.....///.....///.....///.....///</i> es la clave para poder acceder al contenido de la màquina peusto que este causa confusiòn al codigo anterior que lo ejcuta y hace que se pueda leer o mostrar contenido del servidor
+						</p>
+					</nav>
+					<img src="../imagenes/RedandBlue/page1.png" alt="etc passwd">
+				</div>
+				<nav>
+					<p>
+						En este punto, es importante verificar los usuarios teniendose asi las direcciones en <i>/home</i> de estos logrando asi llegar al contenido de blue, en este caso el ".bash_history", donde se almacena el historial de los comandos utilizados por el usuario, asimismo en este punto se puede ver que haye un archivo oculto .reminder el cual se ha realizado como una especie de combinaciòn mediante hashcat, por lo que recurrimos a bùscar este contenido. Recordemos que en TryHackme nos indica que "Haye una contraseña, esta se modifica siendo casi siempre la misma, solo cambiando parte de esta" y esto es lo que asumimos se ha realizado en este punto
+					</p>
+				</nav>
+				<img src="../imagenes/RedandBlue/page2.png" alt="History">
+				<nav>
+					<p>
+						Y efectivamente, al direccionar al archivo base <b>.reminder</b> encontramos una posible credencial
+					</p>
+				</nav>
+				<img src="../imagenes/RedandBlue/pass.png" alt="Contraseña base">
+				<nav>
+					<p>
+						Despues de obtener esto copiamos esta posible credencial a nuestra màquina y tratamos de hacer lo mismo que se ha realizado en el historial, en este caso no usarè hashcat sino john
+					</p>
+				</nav>
+				<img src="../imagenes/RedandBlue/alternar.png" alt="Combinaciones">
+				<nav>
+					<p>
+						Teniendo asi un archivo de salida con 37109 posibles combinaciones, las cuales seràn pasadas mediante hydra, para aplicar fuerza bruta a la conecciòn ssh que verificamos el puerto abierto al iniciar el escaneo 
+					</p>
+					<p>
+						Es importante saber que red, siempre enviara mensajes en la consola y en un punto este nos cerrarà la conecciòn, por lo cual al hacer el proceso de manera eficiente es de gran importancia, ya que cada vez que nos cierre la conecciòn la contraseñapara la conecciòn con ssh cambiarà y es necesario nuevamente aplicar hydra.
+					</p>
+				</nav>
+				<img src="../imagenes/RedandBlue/hydra.png" alt="Aplicando hydra">
+				<nav>
+					<p>
+						Despues de lograr la conecciòn se ha encontrado la primera flag, posteriormente he pasado <b>pspy64</b> para tratar de reconocer los servicio que se estan corriendo como si se fuese root sin serlo, asi habilitando un servidor <b>python</b> desde mi màquina local y descargando esta con <b>curl</b> en la màquina destino
+					</p>
+				</nav>
+				<img src="../imagenes/RedandBlue/flag1.png" alt="Primera flag">
+				<img src="../imagenes/RedandBlue/pspy64.png" alt="Envio de archivo">
+				<nav>
+					<p>
+						Despues de asignar permisos a <b>pspy</b> y descargarlo en el directorio <i>/tmp</i> he logrado ejecutarlo, teniendo una shell inversa a un dominio especifico
+					</p>
+				</nav>
+				<img src="../imagenes/RedandBlue/pspyperm.png" alt="Ejecutando programa">
+				<img src="../imagenes/RedandBlue/pspycon.png" alt="Contenido encontrado">
+				<nav>
+					<p>
+						Motivo por el que al revisar el <i>/etc/hosts</i> de la màquina verificamos que haye una IP asociada y el dominio sin embargo queremos lograr la conecciòn desde nuestra màquina por lo que en el archivo hosts agregamos nuestra IP y el dominio al que esta apuntando, no se puede agregar directamente por lo cual he utilizado <b>echo</b> 
+					</p>
+				</nav>
+				<img src="../imagenes/RedandBlue/modificahost.png" alt="Modificaciòn de hosts">
+				<nav>
+					<p>
+						Una vez se ha agregado este contenido a hosts es necesario ponerse en escucha con <b>nc</b> en nuestra màquina, especificamente al puerto 9001
+					</p>
+				</nav>
+				<img src="../imagenes/RedandBlue/listening.png" alt="Escucha">
+				<nav>
+					<p>
+						Al recibir la conecciòn y hacer el listado se tiene la segunda flag, lo importante en esta shell es que no importa que se cambie la contraseña, ahora ya tenemos una conecciòn estable
+					</p>
+				</nav>
+				<img src="../imagenes/RedandBlue/flag2.png" alt="Segunda flag">
+				<nav>
+					<p>
+						Despues de obtener las 2 flags, ahora lo necesario es escalar privilegios y verificando el contenido se ha encontrado un <b>pkexec</b> en el directorio de <b>git</b>, buscando vulnerabilidades a esto he encontrado el exploit <b>cve-2021-4034</b>, el cual invoca a un <i><b>.pkexec</b></i> para lograr escalar privilegios como root, por lo cual al revisarlo, se debe modificar la ùltima linea de este, apuntando hacia donde se encuentra el archivo en la màquina victima
+					</p>
+				</nav>
+				<img src="../imagenes/RedandBlue/modificate.png" alt="Modificar CVE">
+				<nav>
+					<p>
+						Despues de pasar el archivo a la màquina mediante un servidor con python, al igual que con el archivo anterior  y descargar este, le he asignado permisos 777
+					</p>
+				</nav>
+				<img src="../imagenes/RedandBlue/pkexec.png" alt="Llevar pkexec">
+				<nav>
+					<p>
+						Después de ejecutar el exploit con python3 que esta instalado en la màquina, podemos ver que finalmente se ha logrado la escalada de privilegios, siendo root
+					</p>
+				</nav>
+				<img src="../imagenes/RedandBlue/root.png" alt="Escalada a root">
+				<nav>
+					<p>
+						llegando asi a obtener la flag 3 en el directorio de <i>/root</i>
+					</p>
+				</nav>
+				<img src="../imagenes/RedandBlue/flag3.png" alt="Tercera flag">
+			</section>
+   	</div>
+   </body>
+   <hr>
+   <footer>
+      <div>
+         Jcarlos
+      </div>
+      <div>
+         <a href="https://rb.gy/d2u7jy" target="_blank" > Linkeding </a>
+      </div>
+   </footer>
+</html>
