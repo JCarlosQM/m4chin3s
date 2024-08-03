@@ -4,14 +4,7 @@
       <meta charset="UTF-8">
       <link rel="stylesheet" href=../css/general.css>
       <title>Blue vs Red</title>
-      <style>
-			.obviarContent{
-				display: inline-block;
-				text-align: left;
-				white-space: pre;
-			}
-      </style>
-   </head>
+    </head>
    <body>
    	<h2>Blue vs Red</h2>
    	<div>
@@ -58,22 +51,25 @@
 							En este puto podemos deducir que se trata de un LFI (Local File Inclusion), por la direcciòn a la que apunta la web, sin embargo al tratar de pasar datos directos clasicos de un LFI este no corresponde, pero cuando se trata de ir a <b>index.php</b>, he logrado obtener lo que parecen ser unas reglas del propio PHP
 						</p>
 					</nav>
-					<div class="obviarContent">
-						<pre style="font-family: monospace; white-space: pre; background-color: #f5f5f5; border: 1px solid #ccc; padding: 10px; overflow-x: auto;"> 
-        &lt;?php
-        function sanitize_input($param) {
-            $param1 = str_replace("../","",$param);
-            $param2 = str_replace("./","",$param1);
-            return $param2;
-        }
-        $page = $_GET['page'];
-        if (isset($page) &amp;&amp; preg_match("/^[a-z]/", $page)) {
-            $page = sanitize_input($page);
-            readfile($page);
-        } else {
-            header('Location: /index.php?page=home.html');
-        }
-        ?&gt;
+					<div class="codigo-container">
+                  <div class="btn_cp">
+                     <a class="formB" onclick="copiarCodigo(this)"> < / ></a>
+                  </div>
+						<pre class="codigo"> 
+&lt;?php
+function sanitize_input($param) {
+	$param1 = str_replace("../","",$param);
+   $param2 = str_replace("./","",$param1);
+   return $param2;
+}
+$page = $_GET['page'];
+	if (isset($page) &amp;&amp; preg_match("/^[a-z]/", $page)) {
+       $page = sanitize_input($page);
+       readfile($page);
+   } else {
+   	header('Location: /index.php?page=home.html');
+   }
+?&gt;
 						</pre>
 					</div>
 					<nav>
@@ -178,4 +174,5 @@
          <a href="https://rb.gy/d2u7jy" target="_blank" > Linkeding </a>
       </div>
    </footer>
+   <script src="../js/global.js"></script>
 </html>
