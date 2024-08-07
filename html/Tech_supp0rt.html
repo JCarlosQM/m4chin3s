@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+   <head>
+      <meta charset="UTF-8">
+      <link rel="stylesheet" href=../css/general.css>
+      <title>Tech_supp0rt : 1</title>
+   </head>
+   <body>
+   	<h2>Tech_supp0rt : 1</h2>
+   	<div>
+			<div>
+				<img src="../imagenes/Tech_supp0rt/tech_suport.png" alt="Tech Support">
+			</div>
+
+			<section>
+				<nav>
+					<p>
+						Esta màquina es de dificultad fàcil se ubica en Tryhackme y cuenta con un panel administrativo que tiene una version vulnerable de <b>Subrion</b>, ademàs tiene recursos compartidos mediante <b>smb</b> lo cual se puede leer sin necesidad de credenciales, como tambièn cuenta con credenciales de usuarios en texto plano den archivos de configuraciònes de la aplicaciòn web
+					</p>
+					<p>
+						 Para comenzar, es necesario encender la maquina en la plataforma TryHakme y tener el archivo *.openvpn en nuestro dispositivo 
+					</p>
+					<p>
+						En primera instancia para conocer el SO operativo de la màquina y verificar la conecciòn correcta a esta, hacemos un pineo base 
+					</p>
+				</nav>
+				<img src="../imagenes/Tech_supp0rt/pineo.png" alt="Pineo base">
+				<div>
+					<nav>
+						<p>
+							Posterior a verificar la conecciòn procedemos a hacer un escaneo de puertos de manera general, es decir escaneando los <i>65535</i> puertos destino, encontrandose como abiertos 
+						</p>
+					</nav>
+					<img src="../imagenes/Tech_supp0rt/escaneoBase.png" alt="Primer escaneo nmap">
+					 <nav>
+                  <p>
+                  	Teniendo ya un informe de los puertos abiertos, hacemos uso nuevamente de <b>nmap</b> para verificar los servicios, versiones y detalles sobre los puertos encontrados, haciendo uso de los scripts proporcionados por <b>nmap</b>  
+                  </p>
+               </nav>
+					<img src="../imagenes/Tech_supp0rt/escaneointer.png" alt="Segundo escaneo, solo puertos">
+					<nav>
+						<p>
+							Al concluir el escaneo vemos detalle sobre los puertos y las versiones de estos, verificando asi que en el puerto 80 esta la pàgina por defecto de <b>Apache2</b>, como tambien las versiones de samba que estan corriendo en los puertos <i>139</i> y <i>445</i>. Al verificar la web ciertamente tenemos la pàgina por defecto de <b>Apache</b>
+						</p>
+					</nav>
+					<img src="../imagenes/Tech_supp0rt/webApache.png" alt="Pàgina apache por defecto">
+               <nav>
+						<p>
+							Despuès de verificar el còdigo y si haye alguna vulnerabilidad vigente, he llegado a hacer un listado del contenido compartido por el servidor smb simplemente utilizando <b>smbclient</b> ya que en el reporte nos indica que <i>account_used: guest</i> y <i>smb2-security-mode -> Message signing enabled but not required</i>
+						</p>
+               </nav>
+					<img src="../imagenes/Tech_supp0rt/listadosmb.png" alt="Listado smb">
+               <nav>
+						<p>
+							Verificamos que haye contenido compartido, por smb y lo màs importante de destacar no se utiliza una contraseña, por lo que cuando se solicita esta solo se presiona enter y nos muestra contenido, verificando asi que se puede revisar <i>websvr</i>, a lo que nuevamente accederemos pero esta vez sin hacer listado sino para revisarlo
+						</p>
+               </nav>
+					<img src="../imagenes/Tech_supp0rt/coneccionsmb.png" alt="Conecciòn a smb">
+               <nav>
+						<p>
+							Ya llegando a interactuar con <b>smbcliente</b> y la màquina destino, podemos hacer un get de <i>enter.txt</i> para que el recurso se descargue a nuestra màquina atacante y lo podamos ver de manera detallada 
+						</p>
+					</nav>
+					<img src="../imagenes/Tech_supp0rt/content.png" alt="Contenido txt">
+					<nav>
+						<p>
+							El texto nos indica algunas tareas pendientes por parte del usuario, entre ellas esta arreglar el sitio <i>/subrion</i> desde el panel de este, asimismo tenemos lo que parece ser una credenciale del usuario <b>admin</b>, pero esta esta cifrada con <b><i>magic</i></b>
+						</p>
+						<p style="text-align: center;">
+							<i>Subrion es un sistema de gestión de contenido (CMS) de código abierto que permite a los usuarios crear y administrar sitios web</i>
+						</p>
+						<p>
+							Verificando el contenido de la web, si directamente ponemos <i>IP/subrion</i>, esta nos redirecciona a otra ip la que nos reporta una solicitud erronea, por lo cual al poner la <i>IP/subrion/panel</i> llegamos a tener un formulario para acceder al panel
+						</p>
+					</nav>
+					<img src="../imagenes/Tech_supp0rt/logeo.png" alt="Formulario logeo">
+					<nav>
+						<p>
+							Para tratar de acceder ya tenemos el nombre de usuario, pero nos falta la contraseña, ya que esta encryptada, por lo que usaremos <b>CyberChef</b>, logrando tener una contraseña 
+						</p>
+					</nav>
+					<img src="../imagenes/Tech_supp0rt/cyberchef.png" alt="Procesando en CyberChef">
+					<nav>
+						<p>
+							Ya habiendo ingresado las credenciales <b><i>admin : Scam2021</i></b> podemos acceder a un panel administrativo
+						</p>
+					</nav>
+					<img src="../imagenes/Tech_supp0rt/panel.png" alt="Panel administrativo">
+					<nav>
+						<p>
+							Al verificar el panel y ver detalles sopbre este, se logra conocer que la version de Subrion CMS utilizada es <i>Subrion CMS  v 4.2.1</i>, la cual es vulnerable segun <b>searchscploit</b>
+						</p>
+					</nav>
+					<img src="../imagenes/Tech_supp0rt/searchsploit.png" alt="Bùsqueda con searchsploit">
+					<nav>
+						<p>
+							por lo que usaremos el exploit <b>49876.py</b>, con lo que se ha logrado establecer una conecciòn 
+						</p>
+					</nav>
+               <div class="codigo-container">
+               	<div class="btn_cp">
+               		<a class="formB" onclick="copiarCodigo(this)"> < / ></a>
+						</div>
+							 <pre class="codigo">
+
+							 
+python 49876.py -u http://10.10.33.116/subrion/panel/ -l admin -p Scam2021 
+							 </pre>
+					</div><br>
+					<img src="../imagenes/Tech_supp0rt/coneccionba.png" alt="Primera conecciòn">
+					<nav>
+						<p>
+							Logramos asi mediante la verificaciòn saber que ya tenemos la primera conecciòn a la màquina destino, donde podemos listar, ver y manipùlar contenido
+						</p>
+					</nav>
+					<img src="../imagenes/Tech_supp0rt/user.png" alt="Verificaciòn de conecciòn">
+					<nav>
+						<p>
+							Al ya tener acceso a la màquina, lo primero que vamos a hacer es la revisiòn de los usuarios que esta posee, para lo cual vamos a imprimir el contenido de <i>/etc/passwd</i>, donde podemos apreciar al usuario <b>scamsite</b>
+						</p>
+					</nav>
+					<img src="../imagenes/Tech_supp0rt/scamsite.png" alt="Listar usuarios">
+					<nav>
+						<p>
+							Para verificar de manera màs ràpida si se tiene algun proceso vulnerable o haye problemas en als configuraciones, he procedido a lanzar <b>linpeas</b> en la màquina destino, habiltando un servidor con python desde mi muina y haciendo la descarga con <b>curl</b> en la que voy a examinar
+						</p>
+					</nav>
+					<img src="../imagenes/Tech_supp0rt/linpeas.png" alt="Descarga de linpeas">
+					<nav>
+						<p>
+							Verificando el reporte de <b>linpeas</b> podemos apreciar una credencial que se asume es de una BD, sin embargo vcabe recalcar que en el escaneo se pudo apreciar que se tenia abierta la conecciòn para <b>ssh</b> por lo que he intentado emplear esta credencial para esta conecciòn
+						</p>
+					</nav>
+					<img src="../imagenes/Tech_supp0rt/credencial.png" alt="Credencial ssh">
+					<img src="../imagenes/Tech_supp0rt/sshconect.png" alt="Conecciòn ssh">
+					<nav>
+						<p>
+							Al ya lograr el acceso, he procedido a verificar el contenido del usuario y listar lo que este tiene, por lo que despues de verificar ello, he imprimido el contenido de <b>.bash_history</b> logrando aqui encontrar un comando con <b>sudo</b> el cual refiere a <b>iconv</b> <i>"la cual es una herramienta que forma parte de la biblioteca GNU C y permite la conversion de texto entre diferentes codificaciones de caracteres"</i>
+						</p>
+					</nav>
+					<img src="../imagenes/Tech_supp0rt/historial.png" alt="verificaciòn de historial">
+					<nav>
+						<p>
+							Teniendo ya este contenido he procedido a jcutar el mismo comando del historial, con lo cual me ha impreso una serie de caracteres lo que representa a la flag
+						</p>
+					</nav>
+					<img src="../imagenes/Tech_supp0rt/flag.png" alt="Flag">
+				</div>
+				
+			</section>
+					
+   	</div>
+   </body>
+   <hr>
+   <footer>
+      <div>
+         Jcarlos
+      </div>
+      <div>
+         <a href="https://rb.gy/d2u7jy" target="_blank" > Linkeding </a>
+      </div>
+   </footer>
+	<script src="../js/global.js"></script>
+</html>
